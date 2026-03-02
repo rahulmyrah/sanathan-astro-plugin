@@ -1,0 +1,13 @@
+{
+  "name":         "Sanathan Astro Services",
+  "version":      "1.0.0",
+  "author":       "<a href=\"https://sanathan.app\">Sanathan App</a>",
+  "homepage":     "https://sanathan.app",
+  "requires":     "5.8",
+  "tested":       "6.9",
+  "requires_php": "7.4",
+  "last_updated": "2026-03-02",
+  "description":  "Cached Predictions, Kundali, Personal Guruji AI and push notifications for the Sanathan Astrology platform.",
+  "download_url": "https://github.com/rahulmyrah/sanathan-astro-plugin/releases/download/v1.0.0/sanathan-astro-services.zip",
+  "changelog":    "<h4>1.0.0</h4><ul><li>Initial release: Predictions cache, Kundali storage, REST API, Admin UI.</li></ul>"
+}
