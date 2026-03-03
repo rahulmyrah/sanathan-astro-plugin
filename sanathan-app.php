@@ -3,7 +3,7 @@
  * Plugin Name:       Sanathan Astro Services
  * Plugin URI:        https://sanathan.app
  * Description:       Cached Predictions, Kundali storage, Personal Guruji AI (Qdrant RAG), and FCM push notifications for the Sanathan Astrology platform. Powers the Flutter mobile app via REST API.
- * Version:           1.0.0
+ * Version:           1.1.0
  * Author:            Sanathan App
  * Author URI:        https://sanathan.app
  * License:           GPL-2.0+
@@ -16,7 +16,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-define( 'SAS_VERSION',     '1.0.0' );
+define( 'SAS_VERSION',     '1.1.0' );
 define( 'SAS_PLUGIN_DIR',  plugin_dir_path( __FILE__ ) );
 define( 'SAS_PLUGIN_URL',  plugin_dir_url( __FILE__ ) );
 define( 'SAS_PLUGIN_FILE', __FILE__ );
@@ -49,6 +49,8 @@ require_once SAS_PLUGIN_DIR . 'includes/class-sas-api-client.php';
 require_once SAS_PLUGIN_DIR . 'includes/class-sas-predictions.php';
 require_once SAS_PLUGIN_DIR . 'includes/class-sas-kundali.php';
 require_once SAS_PLUGIN_DIR . 'includes/class-sas-cron.php';
+require_once SAS_PLUGIN_DIR . 'includes/class-sas-aip-client.php';
+require_once SAS_PLUGIN_DIR . 'includes/class-sas-guruji.php';
 require_once SAS_PLUGIN_DIR . 'includes/class-sas-rest-api.php';
 require_once SAS_PLUGIN_DIR . 'includes/class-sas-updater.php';
 
@@ -103,14 +105,16 @@ function sas_boot() {
  */
 function sas_get_settings(): array {
     $defaults = [
-        'qdrant_url'                  => '',
-        'qdrant_api_key'              => '',
-        'llm_provider'                => 'claude',
-        'llm_api_key'                 => '',
-        'llm_model'                   => 'claude-haiku-4-5-20251001',
-        'fcm_server_key'              => '',
-        'qdrant_confidence_threshold' => 0.75,
-        'enabled_languages'           => SAS_SUPPORTED_LANGS,
+        // AIP (AI Power plugin) integration
+        'aip_api_key'      => '',
+        'aip_model'        => 'gpt-4o-mini',
+        'aip_model_custom' => '',
+
+        // Firebase FCM (Phase 3)
+        'fcm_server_key'   => '',
+
+        // Prediction language caching
+        'enabled_languages' => SAS_SUPPORTED_LANGS,
     ];
 
     $saved = get_option( 'sas_settings', [] );

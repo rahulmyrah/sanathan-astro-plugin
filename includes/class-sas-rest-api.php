@@ -114,24 +114,71 @@ class SAS_Rest_Api {
             ],
         ] );
 
-        // ── Guruji (Phase 2 stubs) ─────────────────────────────────────────────
+        // ── Guruji — Phase 2 ──────────────────────────────────────────────────
+
+        // List available avatar presets (public — needed before user logs in)
+        register_rest_route( self::NAMESPACE, '/guruji/presets', [
+            'methods'             => WP_REST_Server::READABLE,
+            'callback'            => [ __CLASS__, 'guruji_presets' ],
+            'permission_callback' => '__return_true',
+        ] );
+
+        // Get Guruji profile
+        register_rest_route( self::NAMESPACE, '/guruji/profile', [
+            [
+                'methods'             => WP_REST_Server::READABLE,
+                'callback'            => [ __CLASS__, 'guruji_get_profile' ],
+                'permission_callback' => [ __CLASS__, 'require_logged_in' ],
+            ],
+            [
+                'methods'             => WP_REST_Server::EDITABLE,  // PUT + PATCH
+                'callback'            => [ __CLASS__, 'guruji_save_profile' ],
+                'permission_callback' => [ __CLASS__, 'require_logged_in' ],
+                'args'                => self::guruji_profile_args(),
+            ],
+        ] );
+
+        // First-time setup (same as PUT /guruji/profile but POST-friendly)
+        register_rest_route( self::NAMESPACE, '/guruji/setup', [
+            'methods'             => WP_REST_Server::CREATABLE,
+            'callback'            => [ __CLASS__, 'guruji_save_profile' ],
+            'permission_callback' => [ __CLASS__, 'require_logged_in' ],
+            'args'                => self::guruji_profile_args(),
+        ] );
+
+        // Upload custom avatar photo
+        register_rest_route( self::NAMESPACE, '/guruji/avatar/upload', [
+            'methods'             => WP_REST_Server::CREATABLE,
+            'callback'            => [ __CLASS__, 'guruji_upload_avatar' ],
+            'permission_callback' => [ __CLASS__, 'require_logged_in' ],
+        ] );
+
+        // Chat with Guruji
         register_rest_route( self::NAMESPACE, '/guruji/chat', [
             'methods'             => WP_REST_Server::CREATABLE,
             'callback'            => [ __CLASS__, 'guruji_chat' ],
             'permission_callback' => [ __CLASS__, 'require_logged_in' ],
             'args'                => [
-                'message'    => [ 'required' => true, 'sanitize_callback' => 'sanitize_text_field' ],
-                'session_id' => [ 'default' => '', 'sanitize_callback' => 'sanitize_text_field' ],
+                'message'       => [ 'required' => true, 'sanitize_callback' => 'sanitize_textarea_field' ],
+                'session_token' => [ 'default' => '', 'sanitize_callback' => 'sanitize_text_field' ],
             ],
         ] );
 
+        // Chat history
         register_rest_route( self::NAMESPACE, '/guruji/history', [
-            'methods'             => WP_REST_Server::READABLE,
-            'callback'            => [ __CLASS__, 'guruji_history' ],
-            'permission_callback' => [ __CLASS__, 'require_logged_in' ],
-            'args'                => [
-                'session_id' => [ 'default' => '', 'sanitize_callback' => 'sanitize_text_field' ],
-                'page'       => [ 'default' => 1, 'sanitize_callback' => 'absint' ],
+            [
+                'methods'             => WP_REST_Server::READABLE,
+                'callback'            => [ __CLASS__, 'guruji_history' ],
+                'permission_callback' => [ __CLASS__, 'require_logged_in' ],
+                'args'                => [
+                    'session_token' => [ 'default' => '', 'sanitize_callback' => 'sanitize_text_field' ],
+                    'limit'         => [ 'default' => 50, 'sanitize_callback' => 'absint' ],
+                ],
+            ],
+            [
+                'methods'             => WP_REST_Server::DELETABLE,
+                'callback'            => [ __CLASS__, 'guruji_clear_history' ],
+                'permission_callback' => [ __CLASS__, 'require_logged_in' ],
             ],
         ] );
     }
@@ -294,20 +341,197 @@ class SAS_Rest_Api {
         ], 200 );
     }
 
-    // ── Guruji (Phase 2 stubs) ─────────────────────────────────────────────────
+    // ── Guruji ────────────────────────────────────────────────────────────────
 
-    public static function guruji_chat( WP_REST_Request $req ): WP_REST_Response {
-        // Phase 2: integrate Qdrant RAG + LLM fallback
+    /**
+     * GET /guruji/presets
+     * Lists all available preset avatar options.
+     */
+    public static function guruji_presets( WP_REST_Request $req ): WP_REST_Response {
+        $presets = SAS_Guruji::get_presets();
+
+        // Attach full image URLs
+        foreach ( $presets as &$p ) {
+            $p['image_url'] = SAS_PLUGIN_URL . 'admin/images/guruji/' . $p['preset_id'] . '.png';
+        }
+        unset( $p );
+
         return new WP_REST_Response( [
-            'status'  => 'coming_soon',
-            'message' => 'Personal Guruji is coming soon. Your Kundali is being prepared.',
+            'status' => 'ok',
+            'data'   => $presets,
         ], 200 );
     }
 
-    public static function guruji_history( WP_REST_Request $req ): WP_REST_Response {
+    /**
+     * GET /guruji/profile
+     * Returns the current user's Guruji profile, or setup_required flag.
+     */
+    public static function guruji_get_profile( WP_REST_Request $req ): WP_REST_Response {
+        $user_id = get_current_user_id();
+        $profile = SAS_Guruji::get_profile( $user_id );
+
+        if ( ! $profile ) {
+            return new WP_REST_Response( [
+                'status'        => 'not_setup',
+                'setup_required'=> true,
+                'message'       => 'Guruji not set up yet. Please complete setup.',
+            ], 200 );
+        }
+
         return new WP_REST_Response( [
-            'status' => 'coming_soon',
-            'data'   => [],
+            'status'  => 'ok',
+            'profile' => $profile,
+        ], 200 );
+    }
+
+    /**
+     * POST /guruji/setup  or  PUT /guruji/profile
+     * Create or update the Guruji profile.
+     */
+    public static function guruji_save_profile( WP_REST_Request $req ): WP_REST_Response {
+        $user_id = get_current_user_id();
+
+        $data = [
+            'guruji_name'      => $req->get_param( 'guruji_name' ),
+            'avatar_type'      => $req->get_param( 'avatar_type' ),
+            'avatar_preset_id' => $req->get_param( 'avatar_preset_id' ),
+            'avatar_url'       => $req->get_param( 'avatar_url' ),
+            'gender'           => $req->get_param( 'gender' ),
+            'personality'      => $req->get_param( 'personality' ),
+            'reply_language'   => $req->get_param( 'reply_language' ),
+            'tts_enabled'      => $req->get_param( 'tts_enabled' ),
+        ];
+
+        $result = SAS_Guruji::save_profile( $user_id, $data );
+
+        return new WP_REST_Response( [
+            'status'  => 'ok',
+            'profile' => $result['profile'],
+        ], 200 );
+    }
+
+    /**
+     * POST /guruji/avatar/upload
+     * Accept a base64-encoded image from Flutter and save it as a WP Media file.
+     */
+    public static function guruji_upload_avatar( WP_REST_Request $req ): WP_REST_Response {
+        $user_id = get_current_user_id();
+
+        $body = $req->get_json_params();
+        $b64  = $body['image_base64'] ?? '';
+        $mime = $body['mime_type']    ?? 'image/jpeg';
+
+        if ( empty( $b64 ) ) {
+            return new WP_REST_Response( [
+                'status'  => 'error',
+                'message' => 'No image data provided.',
+            ], 400 );
+        }
+
+        // Decode base64
+        $image_data = base64_decode( preg_replace( '#^data:[^;]+;base64,#', '', $b64 ) );
+        if ( ! $image_data ) {
+            return new WP_REST_Response( [
+                'status'  => 'error',
+                'message' => 'Invalid base64 image data.',
+            ], 400 );
+        }
+
+        // Save to WP uploads
+        $ext   = ( $mime === 'image/png' ) ? 'png' : 'jpg';
+        $fname = 'guruji-avatar-' . $user_id . '-' . time() . '.' . $ext;
+        $upload = wp_upload_bits( $fname, null, $image_data );
+
+        if ( ! empty( $upload['error'] ) ) {
+            return new WP_REST_Response( [
+                'status'  => 'error',
+                'message' => 'Upload failed: ' . $upload['error'],
+            ], 500 );
+        }
+
+        $avatar_url = $upload['url'];
+
+        // Optionally update the profile with this new avatar
+        SAS_Guruji::save_profile( $user_id, [
+            'avatar_type' => 'custom',
+            'avatar_url'  => $avatar_url,
+        ] );
+
+        return new WP_REST_Response( [
+            'status'     => 'ok',
+            'avatar_url' => $avatar_url,
+        ], 200 );
+    }
+
+    /**
+     * POST /guruji/chat
+     * Send a message to the user's personal Guruji AI.
+     */
+    public static function guruji_chat( WP_REST_Request $req ): WP_REST_Response {
+        $user_id       = get_current_user_id();
+        $message       = $req->get_param( 'message' );
+        $session_token = $req->get_param( 'session_token' ) ?: '';
+
+        if ( empty( trim( $message ) ) ) {
+            return new WP_REST_Response( [
+                'status'  => 'error',
+                'message' => 'Message cannot be empty.',
+            ], 400 );
+        }
+
+        $result = SAS_Guruji::chat( $user_id, $message, $session_token );
+
+        if ( empty( $result['success'] ) ) {
+            $code = ! empty( $result['setup_required'] ) ? 428 : 503;
+            return new WP_REST_Response( [
+                'status'         => 'error',
+                'message'        => $result['error'] ?? 'Guruji is unavailable.',
+                'setup_required' => $result['setup_required'] ?? false,
+            ], $code );
+        }
+
+        return new WP_REST_Response( [
+            'status'          => 'ok',
+            'reply'           => $result['reply'],
+            'guruji_name'     => $result['guruji_name'],
+            'guruji_avatar'   => $result['guruji_avatar'],
+            'reply_language'  => $result['reply_language'],
+            'guruji_gender'   => $result['guruji_gender'],
+            'tts_enabled'     => $result['tts_enabled'],
+            'session_token'   => $result['session_token'],
+        ], 200 );
+    }
+
+    /**
+     * GET /guruji/history
+     * Returns chat history for the user (most recent session or specified token).
+     */
+    public static function guruji_history( WP_REST_Request $req ): WP_REST_Response {
+        $user_id       = get_current_user_id();
+        $session_token = $req->get_param( 'session_token' ) ?: '';
+        $limit         = min( 100, max( 1, (int) $req->get_param( 'limit' ) ) );
+
+        $history = SAS_Guruji::get_history( $user_id, $session_token, $limit );
+
+        return new WP_REST_Response( [
+            'status' => 'ok',
+            'count'  => count( $history ),
+            'data'   => $history,
+        ], 200 );
+    }
+
+    /**
+     * DELETE /guruji/history
+     * Clear all chat history for the user.
+     */
+    public static function guruji_clear_history( WP_REST_Request $req ): WP_REST_Response {
+        $user_id = get_current_user_id();
+        $deleted = SAS_Guruji::clear_history( $user_id );
+
+        return new WP_REST_Response( [
+            'status'  => 'ok',
+            'deleted' => $deleted,
+            'message' => "Cleared {$deleted} messages.",
         ], 200 );
     }
 
@@ -374,6 +598,20 @@ class SAS_Rest_Api {
             'tz'            => [ 'required' => true,  'sanitize_callback' => 'floatval' ],
             'location_name' => [ 'default' => '',  'sanitize_callback' => 'sanitize_text_field' ],
             'lang'          => [ 'default' => 'en', 'sanitize_callback' => 'sanitize_text_field' ],
+        ];
+    }
+
+    /** Guruji profile save endpoint argument definitions */
+    private static function guruji_profile_args(): array {
+        return [
+            'guruji_name'      => [ 'default' => 'Guruji', 'sanitize_callback' => 'sanitize_text_field' ],
+            'avatar_type'      => [ 'default' => 'preset',  'sanitize_callback' => 'sanitize_text_field' ],
+            'avatar_preset_id' => [ 'default' => '',        'sanitize_callback' => 'sanitize_text_field' ],
+            'avatar_url'       => [ 'default' => '',        'sanitize_callback' => 'esc_url_raw' ],
+            'gender'           => [ 'default' => 'male',    'sanitize_callback' => 'sanitize_text_field' ],
+            'personality'      => [ 'default' => 'traditional', 'sanitize_callback' => 'sanitize_text_field' ],
+            'reply_language'   => [ 'default' => 'en',      'sanitize_callback' => 'sanitize_text_field' ],
+            'tts_enabled'      => [ 'default' => 1,         'sanitize_callback' => 'absint' ],
         ];
     }
 }

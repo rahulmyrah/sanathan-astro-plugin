@@ -21,6 +21,9 @@ class SAS_Admin {
         add_action( 'admin_post_sas_refresh_predictions', [ __CLASS__, 'handle_refresh_predictions' ] );
         add_action( 'admin_post_sas_save_settings',       [ __CLASS__, 'handle_save_settings' ] );
         add_action( 'admin_enqueue_scripts',              [ __CLASS__, 'enqueue_assets' ] );
+
+        // AJAX: sync AIP models into the model dropdown
+        add_action( 'wp_ajax_sas_sync_aip_models', [ __CLASS__, 'handle_sync_aip_models' ] );
     }
 
     // ── Menu ──────────────────────────────────────────────────────────────────
@@ -73,14 +76,15 @@ class SAS_Admin {
     public static function sanitize_settings( $input ): array {
         $clean = [];
 
-        $clean['qdrant_url']                  = esc_url_raw( $input['qdrant_url'] ?? '' );
-        $clean['qdrant_api_key']              = sanitize_text_field( $input['qdrant_api_key'] ?? '' );
-        $clean['llm_provider']                = sanitize_text_field( $input['llm_provider'] ?? 'claude' );
-        $clean['llm_api_key']                 = sanitize_text_field( $input['llm_api_key'] ?? '' );
-        $clean['llm_model']                   = sanitize_text_field( $input['llm_model'] ?? 'claude-haiku-4-5-20251001' );
-        $clean['fcm_server_key']              = sanitize_text_field( $input['fcm_server_key'] ?? '' );
-        $clean['qdrant_confidence_threshold'] = floatval( $input['qdrant_confidence_threshold'] ?? 0.75 );
+        // ── AIP Integration ────────────────────────────────────────────────────
+        $clean['aip_api_key']     = sanitize_text_field( $input['aip_api_key']     ?? '' );
+        $clean['aip_model']       = sanitize_text_field( $input['aip_model']       ?? 'gpt-4o-mini' );
+        $clean['aip_model_custom'] = sanitize_text_field( $input['aip_model_custom'] ?? '' );
 
+        // ── FCM ────────────────────────────────────────────────────────────────
+        $clean['fcm_server_key']  = sanitize_text_field( $input['fcm_server_key']  ?? '' );
+
+        // ── Prediction languages ───────────────────────────────────────────────
         $langs_input = $input['enabled_languages'] ?? SAS_SUPPORTED_LANGS;
         $clean['enabled_languages'] = array_values(
             array_filter(
@@ -145,6 +149,51 @@ class SAS_Admin {
         exit;
     }
 
+    // ── AJAX: Sync AIP Models ─────────────────────────────────────────────────
+
+    /**
+     * AJAX handler: fetch available models from AIP and return as JSON.
+     * Called by the "Sync from AIP" button in Settings.
+     */
+    public static function handle_sync_aip_models(): void {
+        check_ajax_referer( 'sas_sync_aip_models', 'nonce' );
+
+        if ( ! current_user_can( 'manage_options' ) ) {
+            wp_send_json_error( [ 'message' => 'Permission denied.' ] );
+        }
+
+        // Temporarily use the API key sent from the browser (user may not have saved yet)
+        $api_key_from_ui = sanitize_text_field( $_POST['api_key'] ?? '' );
+
+        // Inject the key temporarily so SAS_AIP_Client picks it up
+        if ( $api_key_from_ui ) {
+            add_filter( 'sas_aip_api_key_override', fn() => $api_key_from_ui );
+        }
+
+        $client = new SAS_AIP_Client();
+        $models = $client->fetch_models();
+
+        if ( empty( $models ) ) {
+            wp_send_json_error( [
+                'message' => 'Could not fetch models from AIP. Showing built-in list.',
+                'models'  => SAS_AIP_Client::KNOWN_MODELS,
+                'count'   => self::count_models( SAS_AIP_Client::KNOWN_MODELS ),
+            ] );
+        }
+
+        wp_send_json_success( [
+            'models' => $models,
+            'count'  => self::count_models( $models ),
+        ] );
+    }
+
+    /**
+     * Count total models across all groups.
+     */
+    private static function count_models( array $grouped ): int {
+        return (int) array_sum( array_map( 'count', $grouped ) );
+    }
+
     // ── Assets ────────────────────────────────────────────────────────────────
 
     public static function enqueue_assets( string $hook ): void {
@@ -158,5 +207,7 @@ class SAS_Admin {
             [],
             SAS_VERSION
         );
+
+        // jQuery is always available in WP admin — no need to enqueue separately.
     }
 }
