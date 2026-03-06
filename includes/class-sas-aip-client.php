@@ -163,6 +163,50 @@ class SAS_AIP_Client {
     }
 
     /**
+     * Get a text embedding vector via AIP.
+     *
+     * AIP proxies the embedding request to the configured provider (OpenAI, etc.).
+     * Returns a 1536-dimensional float array (text-embedding-ada-002 / text-embedding-3-small).
+     *
+     * @param string $text  Text to embed.
+     * @return float[]|null  Embedding vector, or null on failure.
+     */
+    public function get_embedding( string $text ): ?array {
+        if ( empty( $this->api_key ) ) {
+            return null;
+        }
+
+        // Trim text to avoid exceeding token limits (≈8k tokens ≈ 32k chars)
+        $text = mb_substr( trim( $text ), 0, 8000 );
+        if ( empty( $text ) ) {
+            return null;
+        }
+
+        $response = $this->post( 'embeddings', [
+            'text'  => $text,
+            'model' => 'text-embedding-ada-002',
+        ] );
+
+        // OpenAI-style: { "data": [{ "embedding": [...] }] }
+        if ( ! empty( $response['data'][0]['embedding'] ) && is_array( $response['data'][0]['embedding'] ) ) {
+            return $response['data'][0]['embedding'];
+        }
+
+        // Direct style: { "embedding": [...] }
+        if ( ! empty( $response['embedding'] ) && is_array( $response['embedding'] ) ) {
+            return $response['embedding'];
+        }
+
+        // Some AIP versions return the vector at root level under 'vector'
+        if ( ! empty( $response['vector'] ) && is_array( $response['vector'] ) ) {
+            return $response['vector'];
+        }
+
+        error_log( '[SAS AIP] get_embedding() — unexpected response: ' . wp_json_encode( array_keys( $response ) ) );
+        return null;
+    }
+
+    /**
      * Quick connectivity check — returns true if AIP responds with valid auth.
      */
     public function test_connection(): bool {

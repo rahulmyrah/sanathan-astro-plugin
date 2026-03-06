@@ -120,6 +120,53 @@ $current_model = $settings['aip_model'] ?? 'gpt-4o-mini';
             </tr>
         </table>
 
+        <!-- ── Qdrant Vector Search ────────────────────────────────────────── -->
+        <h2>⚡ <?php esc_html_e( 'Qdrant Vector Search (RAG Knowledge Base)', 'sanathan-astro' ); ?></h2>
+        <p class="description">
+            <?php esc_html_e( 'Qdrant stores the Vedic knowledge base and user Kundali summaries. Guruji searches here before answering — giving contextually accurate responses.', 'sanathan-astro' ); ?>
+            <br>
+            <?php esc_html_e( 'Collections needed: ', 'sanathan-astro' ); ?>
+            <code>sanathan_knowledge</code> (Global search, 1536 dims, Cosine) &nbsp;|&nbsp;
+            <code>user_kundali</code> (Multitenancy, 1536 dims, Cosine, tenant: user_id)
+        </p>
+
+        <table class="form-table">
+            <!-- Qdrant URL -->
+            <tr>
+                <th><label for="qdrant_url"><?php esc_html_e( 'Qdrant URL', 'sanathan-astro' ); ?></label></th>
+                <td>
+                    <input type="url" id="qdrant_url" name="sas_settings[qdrant_url]"
+                        value="<?php echo esc_attr( $settings['qdrant_url'] ?? '' ); ?>"
+                        class="regular-text"
+                        placeholder="https://xxxx.qdrant.io:6333">
+                    <p class="description"><?php esc_html_e( 'Your Qdrant Cloud URL (with port if needed), or self-hosted URL. E.g. https://abc123.us-east4-0.gcp.cloud.qdrant.io:6333', 'sanathan-astro' ); ?></p>
+                </td>
+            </tr>
+
+            <!-- Qdrant API Key -->
+            <tr>
+                <th><label for="qdrant_api_key"><?php esc_html_e( 'Qdrant API Key', 'sanathan-astro' ); ?></label></th>
+                <td>
+                    <input type="password" id="qdrant_api_key" name="sas_settings[qdrant_api_key]"
+                        value="<?php echo esc_attr( $settings['qdrant_api_key'] ?? '' ); ?>"
+                        class="regular-text" autocomplete="new-password"
+                        placeholder="<?php esc_attr_e( 'Qdrant Cloud API Key', 'sanathan-astro' ); ?>">
+                    <p class="description"><?php esc_html_e( 'From Qdrant Cloud → your cluster → API Keys. For self-hosted, leave blank (or set if you configured auth).', 'sanathan-astro' ); ?></p>
+                </td>
+            </tr>
+
+            <!-- Connection Test -->
+            <tr>
+                <th></th>
+                <td>
+                    <button type="button" id="sas-test-qdrant" class="button button-secondary">
+                        🔌 <?php esc_html_e( 'Test Qdrant Connection', 'sanathan-astro' ); ?>
+                    </button>
+                    <span id="sas-qdrant-status" style="margin-left:12px; color:#666;"></span>
+                </td>
+            </tr>
+        </table>
+
         <!-- ── Prediction Languages ────────────────────────────────────────── -->
         <h2>🌐 <?php esc_html_e( 'Prediction Languages', 'sanathan-astro' ); ?></h2>
         <p class="description"><?php esc_html_e( 'Select which languages to pre-fetch daily/weekly/yearly predictions for. More languages = more API calls per cron run.', 'sanathan-astro' ); ?></p>
@@ -174,6 +221,45 @@ $current_model = $settings['aip_model'] ?? 'gpt-4o-mini';
 
 <script>
 jQuery(function($){
+
+    // ── Qdrant connection test ────────────────────────────────────────────────
+    $('#sas-test-qdrant').on('click', function(){
+        var $btn    = $(this);
+        var $status = $('#sas-qdrant-status');
+        var url     = $('#qdrant_url').val().trim();
+        var key     = $('#qdrant_api_key').val().trim();
+
+        if (!url) {
+            $status.css('color','red').text('⚠ Please enter Qdrant URL first.');
+            return;
+        }
+
+        $btn.prop('disabled', true).text('⏳ Testing...');
+        $status.css('color','#666').text('');
+
+        $.post(ajaxurl, {
+            action:      'sas_test_qdrant',
+            nonce:       '<?php echo esc_js( wp_create_nonce( 'sas_test_qdrant' ) ); ?>',
+            qdrant_url:  url,
+            qdrant_key:  key
+        }, function(res){
+            if (res.success && res.data) {
+                var d = res.data;
+                $status.css('color','green').html(
+                    '✅ Connected! knowledge: <strong>' + d.knowledge + '</strong> docs, ' +
+                    'user_kundali: <strong>' + d.kundali + '</strong> docs.'
+                );
+            } else {
+                $status.css('color','red').text('❌ ' + (res.data?.message || 'Connection failed. Check URL and API key.'));
+            }
+        }).fail(function(){
+            $status.css('color','red').text('❌ Request failed.');
+        }).always(function(){
+            $btn.prop('disabled', false).text('🔌 Test Qdrant Connection');
+        });
+    });
+
+    // ── AIP model sync ───────────────────────────────────────────────────────
     $('#sas-sync-models').on('click', function(){
         var $btn    = $(this);
         var $status = $('#sas-sync-status');

@@ -3,7 +3,7 @@
  * Plugin Name:       Sanathan Astro Services
  * Plugin URI:        https://sanathan.app
  * Description:       Cached Predictions, Kundali storage, Personal Guruji AI (Qdrant RAG), and FCM push notifications for the Sanathan Astrology platform. Powers the Flutter mobile app via REST API.
- * Version:           1.1.0
+ * Version:           1.2.0
  * Author:            Sanathan App
  * Author URI:        https://sanathan.app
  * License:           GPL-2.0+
@@ -16,7 +16,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-define( 'SAS_VERSION',     '1.1.0' );
+define( 'SAS_VERSION',     '1.2.0' );
 define( 'SAS_PLUGIN_DIR',  plugin_dir_path( __FILE__ ) );
 define( 'SAS_PLUGIN_URL',  plugin_dir_url( __FILE__ ) );
 define( 'SAS_PLUGIN_FILE', __FILE__ );
@@ -50,6 +50,8 @@ require_once SAS_PLUGIN_DIR . 'includes/class-sas-predictions.php';
 require_once SAS_PLUGIN_DIR . 'includes/class-sas-kundali.php';
 require_once SAS_PLUGIN_DIR . 'includes/class-sas-cron.php';
 require_once SAS_PLUGIN_DIR . 'includes/class-sas-aip-client.php';
+require_once SAS_PLUGIN_DIR . 'includes/class-sas-qdrant.php';
+require_once SAS_PLUGIN_DIR . 'includes/class-sas-knowledge.php';
 require_once SAS_PLUGIN_DIR . 'includes/class-sas-guruji.php';
 require_once SAS_PLUGIN_DIR . 'includes/class-sas-rest-api.php';
 require_once SAS_PLUGIN_DIR . 'includes/class-sas-updater.php';
@@ -109,6 +111,10 @@ function sas_get_settings(): array {
         'aip_api_key'      => '',
         'aip_model'        => 'gpt-4o-mini',
         'aip_model_custom' => '',
+
+        // Qdrant vector search
+        'qdrant_url'     => '',
+        'qdrant_api_key' => '',
 
         // Firebase FCM (Phase 3)
         'fcm_server_key'   => '',

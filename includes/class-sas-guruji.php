@@ -154,19 +154,22 @@ class SAS_Guruji {
             return [ 'success' => false, 'error' => 'Could not create Guruji session.' ];
         }
 
-        // 3. Load user's Kundali for context
+        // 3. Load user's Kundali for context (from WordPress DB — always fresh)
         $kundali_context = self::build_kundali_context( $user_id );
 
-        // 4. Build the personalised system prompt
-        $system_prompt = self::build_system_prompt( $profile, $kundali_context, $user_id );
+        // 4. RAG: search Qdrant knowledge base for relevant Vedic content
+        $knowledge_context = SAS_Knowledge::search_context( $message, 3 );
 
-        // 5. Load recent conversation history
+        // 5. Build the personalised system prompt (Kundali + RAG knowledge)
+        $system_prompt = self::build_system_prompt( $profile, $kundali_context, $user_id, $knowledge_context );
+
+        // 6. Load recent conversation history (last 10 messages)
         $history = self::get_context_messages( $session['id'], 10 );
 
-        // 6. Append the current user message
+        // 7. Append the current user message
         $history[] = [ 'role' => 'user', 'content' => $message ];
 
-        // 7. Call AIP
+        // 8. Call AIP (LLM generation)
         $aip    = new SAS_AIP_Client();
         $result = $aip->generate( $system_prompt, $history );
 
@@ -179,7 +182,7 @@ class SAS_Guruji {
 
         $reply = $result['content'];
 
-        // 8. Store conversation
+        // 9. Store conversation
         self::store_message( $session['id'], 'user',      $message, 'user' );
         self::store_message( $session['id'], 'assistant', $reply,   'llm' );
 
@@ -274,32 +277,50 @@ class SAS_Guruji {
 
     /**
      * Build the full personalised system prompt.
+     * Includes Kundali context + RAG knowledge context.
+     *
+     * @param array  $profile           Guruji profile row.
+     * @param string $kundali_context   Kundali summary from WordPress DB.
+     * @param int    $user_id
+     * @param string $knowledge_context RAG context from Qdrant (optional).
      */
-    private static function build_system_prompt( array $profile, string $kundali_context, int $user_id ): string {
-        $name        = $profile['guruji_name'];
-        $personality = $profile['personality'];
-        $lang        = $profile['reply_language'];
-        $lang_name   = self::LANGUAGE_NAMES[ $lang ] ?? 'English';
-        $persona     = self::PERSONALITY_PROMPTS[ $personality ] ?? self::PERSONALITY_PROMPTS['traditional'];
+    private static function build_system_prompt(
+        array  $profile,
+        string $kundali_context,
+        int    $user_id,
+        string $knowledge_context = ''
+    ): string {
+        $name      = $profile['guruji_name'];
+        $lang      = $profile['reply_language'];
+        $lang_name = self::LANGUAGE_NAMES[ $lang ] ?? 'English';
+        $persona   = self::PERSONALITY_PROMPTS[ $profile['personality'] ] ?? self::PERSONALITY_PROMPTS['traditional'];
 
-        $user        = get_userdata( $user_id );
-        $user_name   = $user ? $user->first_name ?: $user->display_name : 'Devotee';
+        $user      = get_userdata( $user_id );
+        $user_name = $user ? ( $user->first_name ?: $user->display_name ) : 'Devotee';
 
         $prompt = "You are {$name}, a deeply wise and compassionate personal Vedic astrology guide and spiritual mentor.
 
 PERSONALITY: {$persona}
 
 YOU ARE SPEAKING TO: {$user_name}
-{$kundali_context}
+
+{$kundali_context}";
+
+        if ( ! empty( $knowledge_context ) ) {
+            $prompt .= "\n\n{$knowledge_context}";
+        }
+
+        $prompt .= "
 
 LANGUAGE RULE: You MUST respond ONLY in {$lang_name}. Never switch languages mid-response.
 
 GURUJI RULES:
-- Always address the user as '{$user_name}' or with a warm term of endearment appropriate to the language.
-- Every answer must reference their SPECIFIC planetary positions or Kundali — never give generic advice.
+- Address the user as '{$user_name}' or with a warm term of endearment appropriate to {$lang_name}.
+- Every answer must reference their SPECIFIC planetary positions or Kundali data — never give generic advice.
+- If Vedic Knowledge Reference is provided above, weave it naturally into your answer.
 - Keep responses warm, concise (3-4 paragraphs max), and end with one actionable remedy or mantra when relevant.
-- You are their personal guide who knows them deeply — speak accordingly.
-- If you don't know something astrologically specific, say so humbly and offer general spiritual guidance instead.
+- You know this person deeply — speak with the intimacy of a personal spiritual guide.
+- If you are unsure about something astrologically specific, say so humbly and offer general spiritual guidance.
 - Never reveal that you are an AI. You are {$name}, their personal Guruji.";
 
         return $prompt;
