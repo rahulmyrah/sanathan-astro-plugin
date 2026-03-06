@@ -167,6 +167,27 @@ $current_model = $settings['aip_model'] ?? 'gpt-4o-mini';
             </tr>
         </table>
 
+        <!-- ── Google Gemini API ──────────────────────────────────────────── -->
+        <h2>🌟 <?php esc_html_e( 'Google Gemini API (AI Tools)', 'sanathan-astro' ); ?></h2>
+        <p class="description">
+            <?php esc_html_e( 'Used for generating featured images (Imagen) and SEO "How to Use" content (Gemini Flash) for AI Tool posts.', 'sanathan-astro' ); ?>
+            <br>
+            <?php esc_html_e( 'Get your API key from: ', 'sanathan-astro' ); ?>
+            <a href="https://aistudio.google.com/apikey" target="_blank">Google AI Studio → API Keys</a>
+        </p>
+        <table class="form-table">
+            <tr>
+                <th><label for="gemini_api_key"><?php esc_html_e( 'Gemini API Key', 'sanathan-astro' ); ?></label></th>
+                <td>
+                    <input type="password" id="gemini_api_key" name="sas_settings[gemini_api_key]"
+                        value="<?php echo esc_attr( $settings['gemini_api_key'] ?? '' ); ?>"
+                        class="regular-text" autocomplete="new-password"
+                        placeholder="<?php esc_attr_e( 'AIzaSy...', 'sanathan-astro' ); ?>">
+                    <p class="description"><?php esc_html_e( 'Required for AI Tools Setup: image generation (Imagen 3) and How-to-Use content generation (Gemini Flash).', 'sanathan-astro' ); ?></p>
+                </td>
+            </tr>
+        </table>
+
         <!-- ── Prediction Languages ────────────────────────────────────────── -->
         <h2>🌐 <?php esc_html_e( 'Prediction Languages', 'sanathan-astro' ); ?></h2>
         <p class="description"><?php esc_html_e( 'Select which languages to pre-fetch daily/weekly/yearly predictions for. More languages = more API calls per cron run.', 'sanathan-astro' ); ?></p>
