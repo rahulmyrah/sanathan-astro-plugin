@@ -446,7 +446,7 @@ class SAS_Admin {
         $settings    = sas_get_settings();
         $gemini_key  = $settings['gemini_api_key'] ?? '';
         $skip_list   = self::ai_tools_skip_list();
-        $cpt         = 'ai_tool';
+        $cpt         = 'ai-toolai_tool';
         $taxonomy    = 'ai_tool_category';
         $tag_tax     = 'ai_tool_tag';
 
@@ -555,7 +555,7 @@ class SAS_Admin {
 
         $settings   = sas_get_settings();
         $gemini_key = $settings['gemini_api_key'] ?? '';
-        $cpt        = 'ai_tool';
+        $cpt        = 'ai-toolai_tool';
         $taxonomy   = 'ai_tool_category';
         $tag_tax    = 'ai_tool_tag';
 
@@ -637,7 +637,7 @@ class SAS_Admin {
         require_once ABSPATH . 'wp-admin/includes/file.php';
         require_once ABSPATH . 'wp-admin/includes/media.php';
 
-        $cpt = 'ai_tool';
+        $cpt = 'ai-toolai_tool';
 
         // Only posts without a featured image
         $posts = get_posts( [
@@ -652,7 +652,7 @@ class SAS_Admin {
 
         $generated = 0;
         $errors    = 0;
-        $endpoint  = 'https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-001:predict?key=' . rawurlencode( $api_key );
+        $endpoint  = 'https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-fast-generate-001:predict?key=' . rawurlencode( $api_key );
 
         foreach ( $posts as $post ) {
             $category = self::detect_ai_tool_category( $post->post_title );

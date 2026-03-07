@@ -1,25 +1,36 @@
 <#
 .SYNOPSIS
-    Build a distributable ZIP for the sanathan-app WordPress plugin
-    and update plugin-info.json with the new version metadata.
+    Build the sanathan-app plugin ZIP and upload it to the Hostinger server
+    so WordPress shows "Update Available" in the Plugins dashboard immediately.
 
 .DESCRIPTION
     Run this script from inside the sanathan-app\ folder.
 
-    Workflow:
-      1. Bump SAS_VERSION in sanathan-app.php
-      2. Run this script
-      3. Commit & push all changes + tags to GitHub
-      4. Create a GitHub Release tagged  v{version}  with the generated ZIP
-      5. WordPress sites running the plugin will see "Update Available" within 6 hours
+    What it does:
+      1. Reads SAS_VERSION from sanathan-app.php
+      2. Asks for a changelog entry
+      3. Updates plugin-info.json  (version, last_updated, changelog)
+      4. Builds sanathan-app.zip via git archive  (Linux-safe paths)
+      5. FTP-uploads  sanathan-app.zip  →  server:/plugin-updates/
+      6. FTP-uploads  plugin-info.json  →  server:/plugin-updates/
+      7. WordPress picks up the new version within seconds.
 
-    Uses `git archive` (not Compress-Archive) to guarantee forward-slash paths
-    in the ZIP — required for correct extraction on Linux/Hostinger servers.
-
-.EXAMPLE
-    cd "C:\Users\rahul\Desktop\Sanathan APP\Sanathan App - Vedic Astro\sanathan-app"
-    .\make-zip.ps1
+    ── FTP CONFIG  (fill in once, then never touch again) ───────────────────────
 #>
+
+# ═══════════════════════════════════════════════════════════════════════════════
+#  ▼▼▼  FILL IN YOUR HOSTINGER FTP DETAILS HERE  ▼▼▼
+# ═══════════════════════════════════════════════════════════════════════════════
+
+$FTP_HOST = "ftp.sanathan.app"          # FTP host  (check Hostinger → FTP Accounts)
+$FTP_USER = "your_ftp_username"         # FTP username
+$FTP_PASS = "your_ftp_password"         # FTP password
+$FTP_DIR  = "/public_html/wp-content/uploads/plugin-updates"  # remote directory
+
+# ═══════════════════════════════════════════════════════════════════════════════
+
+Set-StrictMode -Version Latest
+$ErrorActionPreference = 'Stop'
 
 # ── Locate plugin root ────────────────────────────────────────────────────────
 
@@ -27,32 +38,41 @@ $scriptDir  = Split-Path -Parent $MyInvocation.MyCommand.Path
 $pluginMain = Join-Path $scriptDir 'sanathan-app.php'
 
 if ( -not (Test-Path $pluginMain) ) {
-    Write-Error "Could not find sanathan-app.php. Run this script from inside the sanathan-app folder."
+    Write-Error "Cannot find sanathan-app.php. Run from inside the sanathan-app folder."
     exit 1
 }
 
-# ── Read current version from plugin header ───────────────────────────────────
+# ── Banner ────────────────────────────────────────────────────────────────────
+
+Write-Host ""
+Write-Host "  ╔══════════════════════════════════════════════════╗" -ForegroundColor Cyan
+Write-Host "  ║   Sanathan App — Release Script                  ║" -ForegroundColor Cyan
+Write-Host "  ╚══════════════════════════════════════════════════╝" -ForegroundColor Cyan
+Write-Host ""
+
+# ── Read version ──────────────────────────────────────────────────────────────
 
 $mainContent = Get-Content $pluginMain -Raw
 if ( $mainContent -match "define\s*\(\s*'SAS_VERSION'\s*,\s*'([^']+)'" ) {
     $version = $Matches[1]
 } else {
-    Write-Error "Could not read SAS_VERSION from sanathan-app.php"
+    Write-Error "Cannot read SAS_VERSION from sanathan-app.php. Bump it first."
     exit 1
 }
 
-Write-Host ""
-Write-Host "  ╔══════════════════════════════════════════════════╗" -ForegroundColor Cyan
-Write-Host "  ║   Sanathan App — Build Script                    ║" -ForegroundColor Cyan
-Write-Host "  ╚══════════════════════════════════════════════════╝" -ForegroundColor Cyan
-Write-Host ""
 Write-Host "  Plugin version : $version" -ForegroundColor Yellow
-Write-Host "  Source folder  : $scriptDir" -ForegroundColor DarkGray
+Write-Host "  FTP host       : $FTP_HOST" -ForegroundColor DarkGray
+Write-Host "  Remote dir     : $FTP_DIR" -ForegroundColor DarkGray
 Write-Host ""
 
-# ── Confirm before building ───────────────────────────────────────────────────
+# ── Changelog entry ───────────────────────────────────────────────────────────
 
-$confirm = Read-Host "  Build ZIP for v$version ? [Y/n]"
+$changelogEntry = Read-Host "  Changelog entry for v$version (press Enter to skip)"
+if ( -not $changelogEntry ) { $changelogEntry = "Bug fixes and improvements." }
+
+# ── Confirm ───────────────────────────────────────────────────────────────────
+
+$confirm = Read-Host "  Build + upload v$version to $FTP_HOST ? [Y/n]"
 if ( $confirm -ne '' -and $confirm -notmatch '^[Yy]' ) {
     Write-Host "  Aborted." -ForegroundColor Red
     exit 0
@@ -64,60 +84,122 @@ $infoFile = Join-Path $scriptDir 'plugin-info.json'
 if ( Test-Path $infoFile ) {
     $info = Get-Content $infoFile -Raw | ConvertFrom-Json
 
-    Write-Host ""
-    $changelogEntry = Read-Host "  Changelog entry for v$version (e.g. 'Fixed predictions cache')"
-    if ( -not $changelogEntry ) { $changelogEntry = "Bug fixes and improvements." }
+    $newEntry = "<h4>$version</h4><ul><li>$changelogEntry</li></ul>"
 
-    $newEntry         = "<h4>$version</h4><ul><li>$changelogEntry</li></ul>"
-    $info.changelog   = "$newEntry`n$($info.changelog)"
-    $info.version     = $version
-    $info.last_updated = (Get-Date -Format 'yyyy-MM-dd')
-
-    if ( $info.download_url -match 'releases/download/v[^/]+/' ) {
-        $info.download_url = $info.download_url -replace 'releases/download/v[^/]+/', "releases/download/v$version/"
+    # Prepend only if this version isn't already the first entry
+    if ( -not ($info.changelog -match "^<h4>$([regex]::Escape($version))</h4>") ) {
+        $info.changelog = "$newEntry$($info.changelog)"
     }
 
+    $info.version      = $version
+    $info.last_updated = (Get-Date -Format 'yyyy-MM-dd')
+
     $info | ConvertTo-Json -Depth 5 | Set-Content $infoFile -Encoding UTF8
+    Write-Host ""
     Write-Host "  ✔ plugin-info.json updated to v$version" -ForegroundColor Green
-} else {
-    Write-Warning "  plugin-info.json not found — skipping JSON update."
 }
 
-# ── Build ZIP using git archive (forward-slash paths, Linux-safe) ─────────────
+# ── Build ZIP ─────────────────────────────────────────────────────────────────
 
 $parentDir = Split-Path -Parent $scriptDir
-$zipName   = 'sanathan-app.zip'
-$zipPath   = Join-Path $parentDir $zipName
+$zipPath   = Join-Path $parentDir 'sanathan-app.zip'
 
 if ( Test-Path $zipPath ) { Remove-Item $zipPath -Force }
 
+# Commit any local changes first (git archive only packs committed files)
 Push-Location $scriptDir
-# --prefix=sanathan-app/ sets the root folder name inside the ZIP
+Write-Host "  Committing changes…" -ForegroundColor DarkGray
+git add -A 2>&1 | Out-Null
+git commit -m "Release v$version" 2>&1 | Out-Null
+
+Write-Host "  Building ZIP…" -ForegroundColor DarkGray
 git archive --format=zip --prefix=sanathan-app/ HEAD -o $zipPath 2>&1
-$gitResult = $LASTEXITCODE
+$gitOk = $LASTEXITCODE
 Pop-Location
 
-if ( $gitResult -ne 0 ) {
-    Write-Error "git archive failed. Make sure all changes are committed."
+if ( $gitOk -ne 0 ) {
+    Write-Error "git archive failed. Is git installed and is this a git repo?"
     exit 1
 }
 
-$zipSize = [math]::Round( (Get-Item $zipPath).Length / 1KB, 1 )
-Write-Host ""
-Write-Host "  ✔ ZIP created  : $zipPath" -ForegroundColor Green
-Write-Host "    Size         : $zipSize KB" -ForegroundColor DarkGray
-Write-Host ""
+$zipSizeKB = [math]::Round( (Get-Item $zipPath).Length / 1KB, 1 )
+Write-Host "  ✔ ZIP built     : $zipPath  ($zipSizeKB KB)" -ForegroundColor Green
 
-# ── Next-step instructions ────────────────────────────────────────────────────
+# ── FTP upload helper ─────────────────────────────────────────────────────────
 
+function FtpUpload {
+    param(
+        [string] $localPath,
+        [string] $remotePath   # full path e.g. /public_html/wp-content/uploads/plugin-updates/file.zip
+    )
+
+    $fileName = Split-Path $localPath -Leaf
+    $uri      = "ftp://${FTP_HOST}${remotePath}"
+
+    Write-Host "  Uploading $fileName…" -ForegroundColor DarkGray
+
+    $request                   = [System.Net.FtpWebRequest]::Create($uri)
+    $request.Method            = [System.Net.WebRequestMethods+Ftp]::UploadFile
+    $request.Credentials      = New-Object System.Net.NetworkCredential($FTP_USER, $FTP_PASS)
+    $request.UseBinary         = $true
+    $request.UsePassive        = $true
+    $request.KeepAlive         = $false
+    $request.Timeout           = 120000   # 2 min
+
+    $fileBytes = [System.IO.File]::ReadAllBytes($localPath)
+    $request.ContentLength = $fileBytes.Length
+
+    $stream = $request.GetRequestStream()
+    $stream.Write($fileBytes, 0, $fileBytes.Length)
+    $stream.Close()
+
+    $response   = $request.GetResponse()
+    $statusDesc = $response.StatusDescription
+    $response.Close()
+
+    Write-Host "  ✔ $fileName  → $uri" -ForegroundColor Green
+    Write-Host "    Server: $statusDesc" -ForegroundColor DarkGray
+}
+
+# ── Upload both files ─────────────────────────────────────────────────────────
+
+Write-Host ""
+Write-Host "  ── Uploading to $FTP_HOST ─────────────────────────" -ForegroundColor Cyan
+
+try {
+    FtpUpload -localPath $zipPath   -remotePath "${FTP_DIR}/sanathan-app.zip"
+    FtpUpload -localPath $infoFile  -remotePath "${FTP_DIR}/plugin-info.json"
+}
+catch {
+    Write-Host ""
+    Write-Host "  ❌ FTP upload failed: $_" -ForegroundColor Red
+    Write-Host ""
+    Write-Host "  Check your FTP_HOST / FTP_USER / FTP_PASS at the top of make-zip.ps1" -ForegroundColor DarkYellow
+    Write-Host "  The ZIP is at: $zipPath  — you can upload it manually via Hostinger File Manager." -ForegroundColor DarkYellow
+    exit 1
+}
+
+# ── Optional: also push to GitHub ────────────────────────────────────────────
+
+$hasGit = $null -ne (Get-Command git -ErrorAction SilentlyContinue)
+if ( $hasGit ) {
+    Push-Location $scriptDir
+    $pushGit = Read-Host "`n  Also push to GitHub? [Y/n]"
+    if ( $pushGit -eq '' -or $pushGit -match '^[Yy]' ) {
+        git push origin main 2>&1
+        Write-Host "  ✔ Pushed to GitHub" -ForegroundColor Green
+    }
+    Pop-Location
+}
+
+# ── Done ─────────────────────────────────────────────────────────────────────
+
+Write-Host ""
 Write-Host "  ─────────────────────────────────────────────────────" -ForegroundColor DarkGray
-Write-Host "  Next steps to publish v$version :" -ForegroundColor Cyan
+Write-Host "  ✅  v$version is live on the server!" -ForegroundColor Green
 Write-Host ""
-Write-Host "   1. git add -A && git commit -m 'Release v$version'" -ForegroundColor White
-Write-Host "   2. git push origin main" -ForegroundColor White
-Write-Host "   3. gh release create v$version $zipPath --title 'v$version' --notes '$changelogEntry'" -ForegroundColor White
-Write-Host "      (or use GitHub web UI to create the release and upload the ZIP)" -ForegroundColor DarkGray
-Write-Host ""
-Write-Host "  WordPress will auto-detect the update within 6 hours!" -ForegroundColor Green
+Write-Host "  Go to:  WP Admin → Plugins" -ForegroundColor White
+Write-Host "  You should see:  'Update Available — v$version'" -ForegroundColor White
+Write-Host "  Click:  Update Now" -ForegroundColor White
 Write-Host "  ─────────────────────────────────────────────────────" -ForegroundColor DarkGray
 Write-Host ""

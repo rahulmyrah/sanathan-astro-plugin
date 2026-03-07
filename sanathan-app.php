@@ -3,7 +3,7 @@
  * Plugin Name:       Sanathan Astro Services
  * Plugin URI:        https://sanathan.app
  * Description:       Cached Predictions, Kundali storage, Personal Guruji AI (Qdrant RAG), and FCM push notifications for the Sanathan Astrology platform. Powers the Flutter mobile app via REST API.
- * Version:           1.3.2
+ * Version:           1.3.4
  * Author:            Sanathan App
  * Author URI:        https://sanathan.app
  * License:           GPL-2.0+
@@ -16,7 +16,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-define( 'SAS_VERSION',     '1.3.2' );
+define( 'SAS_VERSION',     '1.3.4' );
 define( 'SAS_PLUGIN_DIR',  plugin_dir_path( __FILE__ ) );
 define( 'SAS_PLUGIN_URL',  plugin_dir_url( __FILE__ ) );
 define( 'SAS_PLUGIN_FILE', __FILE__ );
@@ -81,18 +81,17 @@ function sas_boot() {
         SAS_Admin::init();
     }
 
-    // ── Self-hosted GitHub auto-updater ──────────────────────────────────────
-    // Polls plugin-info.json on GitHub. When SAS_VERSION < remote version,
-    // WordPress shows "Update Available" and handles the download automatically.
+    // ── GitHub auto-updater ───────────────────────────────────────────────────
+    // Fetches plugin-info.json from GitHub main branch (repo root).
+    // When SAS_VERSION < remote version, WordPress shows "Update Available".
     //
-    // HOW TO USE:
-    //   1. Push your code + plugin-info.json to GitHub.
-    //   2. Create a Release (tag: v1.0.1) and attach sanathan-astro-services.zip.
-    //   3. Update plugin-info.json on GitHub with the new version + download_url.
-    //   4. Bump SAS_VERSION below (and in the header above) to 1.0.1.
+    // HOW TO RELEASE:
+    //   1. Bump SAS_VERSION in this file + plugin-info.json (version + download_url tag).
+    //   2. git add -A && git commit -m "Release vX.Y.Z" && git push
+    //   3. git archive --format=zip --prefix=sanathan-app/ HEAD -o sanathan-app.zip
+    //   4. GitHub → Releases → Draft new release → tag vX.Y.Z → upload sanathan-app.zip
     //   5. WP Admin → Plugins → "Update Available" appears. Click Update Now. Done.
     //
-    // Replace YOUR_GITHUB_USER with your actual GitHub username:
     new SAS_Updater(
         'https://raw.githubusercontent.com/rahulmyrah/sanathan-astro-plugin/main/plugin-info.json'
     );

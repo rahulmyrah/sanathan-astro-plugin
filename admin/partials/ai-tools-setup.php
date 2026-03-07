@@ -9,7 +9,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 $settings    = sas_get_settings();
 $gemini_ok   = ! empty( $settings['gemini_api_key'] );
-$cpt         = 'ai_tool';
+$cpt         = 'ai-toolai_tool';
 $taxonomy    = 'ai_tool_category';
 
 // Live counts
