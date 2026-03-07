@@ -323,12 +323,12 @@ class SAS_Admin {
     private static function detect_ai_tool_category( string $title ): string {
         $t   = strtolower( $title );
         $map = [
-            'Vedic Astrology'    => [ 'rashi', 'kundali', 'astrology', 'horoscope', 'zodiac', 'nakshatra', 'dasha', 'planetary', 'jyotish', 'planet', 'birth chart', 'birth-chart' ],
-            'Mantra & Prayer'    => [ 'mantra', 'aarti', 'chant', 'archana', 'namavali', 'nanavati', 'prayer', 'stotram' ],
-            'Bhakti & Devotion'  => [ 'bhakti', 'bhajan', 'devotion', 'devotional', 'slokas', 'kirtan', 'spiritual practice', 'habit', 'challenge' ],
-            'Hindu Scriptures'   => [ 'gita', 'bhagavad', 'geeta', 'upanishad', 'ramayana', 'mahabharat', 'purana', 'chapter' ],
+            'Vedic Astrology'    => [ 'rashi', 'kundali', 'astrology', 'horoscope', 'zodiac', 'nakshatra', 'dasha', 'planetary', 'jyotish', 'planet', 'birth chart', 'birth-chart', 'muhurat', 'navagraha', 'panchang', 'graha' ],
+            'Mantra & Prayer'    => [ 'mantra', 'aarti', 'chant', 'archana', 'namavali', 'nanavati', 'prayer', 'stotram', 'stotra', 'sloka', 'slokas' ],
+            'Bhakti & Devotion'  => [ 'bhakti', 'bhajan', 'devotion', 'devotional', 'kirtan', 'spiritual practice', 'habit', 'challenge', 'temple', 'prasad', 'naivedyam', 'shakti', 'peetha', 'sthalam' ],
+            'Hindu Scriptures'   => [ 'gita', 'bhagavad', 'geeta', 'upanishad', 'ramayana', 'mahabharat', 'purana', 'chapter', 'scripture', 'sanskrit' ],
             'Vaastu & Remedies'  => [ 'vaastu', 'vastu', 'remedy', 'remedies', 'dosh', 'dosha', 'mangal', 'gemstone', 'feng' ],
-            'Festivals & Rituals'=> [ 'festival', 'puja', 'ritual', 'yatra', 'dham', 'daan', 'charity', 'pilgrimage' ],
+            'Festivals & Rituals'=> [ 'festival', 'puja', 'ritual', 'yatra', 'dham', 'daan', 'charity', 'pilgrimage', 'vrata', 'vratham', 'sankalpam', 'abhishekam', 'rudrabhishekam', 'havan', 'homa' ],
         ];
         foreach ( $map as $category => $keywords ) {
             foreach ( $keywords as $kw ) {
@@ -360,7 +360,7 @@ class SAS_Admin {
      * Non-Sanathan form titles to skip.
      */
     private static function ai_tools_skip_list(): array {
-        return [ 'blog post generator', 'customer support reply builder' ];
+        return [ 'blog post generator', 'customer support reply builder', 'youtube script writer', 'respectful community message rewriter' ];
     }
 
     /**

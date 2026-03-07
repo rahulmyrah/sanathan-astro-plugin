@@ -146,7 +146,7 @@ if ( is_wp_error( $cat_count ) ) $cat_count = 0;
             ); ?>
         </p>
         <p class="description">
-            <?php esc_html_e( 'Skipped: Blog Post Generator, Customer Support Reply Builder. Safe to run multiple times — duplicates are detected by title.', 'sanathan-astro' ); ?>
+            <?php esc_html_e( 'Skipped: Blog Post Generator, Customer Support Reply Builder, YouTube Script Writer, Respectful Community Message Rewriter. Safe to run multiple times — duplicates are detected by title.', 'sanathan-astro' ); ?>
         </p>
         <?php if ( ! $gemini_ok ) : ?>
         <p class="description" style="color:#e67e00;">⚠ <?php esc_html_e( 'Gemini key not set — posts will be created without SEO guide content.', 'sanathan-astro' ); ?></p>
