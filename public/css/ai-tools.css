@@ -1,0 +1,987 @@
+/* ================================================================
+   Sanathan AI Tools — Frontend Styles
+   Plugin: sanathan-astro-services  |  Version: 1.4.0
+================================================================ */
+
+/* ── Variables ─────────────────────────────────────────────── */
+:root {
+    --sas-primary:      #E8891A;
+    --sas-primary-dark: #C4710E;
+    --sas-gold:         #D4A843;
+    --sas-purple:       #7B2D8B;
+    --sas-dark:         #1a1a2e;
+    --sas-darker:       #16162a;
+    --sas-card:         #FFFFFF;
+    --sas-bg:           #FFF9F0;
+    --sas-border:       #F0E0C8;
+    --sas-text:         #2d2d2d;
+    --sas-text-muted:   #6b6b6b;
+    --sas-shadow:       0 4px 20px rgba(0,0,0,0.10);
+    --sas-shadow-hover: 0 8px 32px rgba(232,137,26,0.22);
+    --sas-radius:       14px;
+    --sas-radius-sm:    8px;
+    --sas-transition:   0.25s ease;
+}
+
+/* ── Reset for plugin scope ────────────────────────────────── */
+.sas-ai-tools-page *,
+.sas-ai-tools-page *::before,
+.sas-ai-tools-page *::after {
+    box-sizing: border-box;
+}
+
+/* ── Page Wrapper ───────────────────────────────────────────── */
+.sas-ai-tools-page {
+    background: var(--sas-bg);
+    min-height: 60vh;
+}
+
+/* ================================================================
+   ARCHIVE — Hero
+================================================================ */
+.sas-hero {
+    background: linear-gradient(135deg, var(--sas-darker) 0%, #2d1b4e 50%, #1a1a2e 100%);
+    padding: 64px 24px 48px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.sas-hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+        radial-gradient(ellipse 80% 60% at 20% 50%, rgba(232,137,26,0.12) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 80% at 80% 30%, rgba(212,168,67,0.10) 0%, transparent 60%);
+    pointer-events: none;
+}
+
+.sas-hero-inner {
+    position: relative;
+    max-width: 700px;
+    margin: 0 auto;
+}
+
+.sas-hero-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(232,137,26,0.15);
+    border: 1px solid rgba(232,137,26,0.35);
+    color: var(--sas-gold);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    padding: 6px 16px;
+    border-radius: 50px;
+    margin-bottom: 20px;
+}
+
+.sas-hero h1 {
+    color: #FFFFFF !important;
+    font-size: clamp(28px, 5vw, 46px);
+    font-weight: 800;
+    line-height: 1.2;
+    margin: 0 0 14px !important;
+    padding: 0 !important;
+    border: none !important;
+}
+
+.sas-hero h1 span {
+    background: linear-gradient(90deg, var(--sas-primary), var(--sas-gold));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.sas-hero-desc {
+    color: rgba(255,255,255,0.65);
+    font-size: 16px;
+    margin: 0 0 32px;
+    line-height: 1.6;
+}
+
+/* ── Search Bar ─────────────────────────────────────────────── */
+.sas-search-wrap {
+    position: relative;
+    max-width: 520px;
+    margin: 0 auto;
+}
+
+.sas-search-input {
+    width: 100%;
+    background: rgba(255,255,255,0.10);
+    border: 1.5px solid rgba(255,255,255,0.20);
+    color: #fff;
+    font-size: 15px;
+    padding: 14px 52px 14px 20px;
+    border-radius: 50px;
+    outline: none;
+    transition: border-color var(--sas-transition), background var(--sas-transition);
+    backdrop-filter: blur(8px);
+}
+
+.sas-search-input::placeholder {
+    color: rgba(255,255,255,0.45);
+}
+
+.sas-search-input:focus {
+    border-color: var(--sas-primary);
+    background: rgba(255,255,255,0.15);
+}
+
+.sas-search-icon {
+    position: absolute;
+    right: 18px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: rgba(255,255,255,0.45);
+    pointer-events: none;
+    width: 18px;
+    height: 18px;
+}
+
+.sas-search-count {
+    color: rgba(255,255,255,0.45);
+    font-size: 13px;
+    margin-top: 10px;
+    text-align: center;
+    min-height: 20px;
+    transition: opacity var(--sas-transition);
+}
+
+/* ================================================================
+   ARCHIVE — Category Filter
+================================================================ */
+.sas-filter-bar {
+    background: #fff;
+    border-bottom: 1px solid var(--sas-border);
+    padding: 0;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+
+.sas-filter-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 24px;
+    display: flex;
+    align-items: center;
+    gap: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.sas-filter-inner::-webkit-scrollbar {
+    display: none;
+}
+
+.sas-filter-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 14px 18px;
+    font-size: 13.5px;
+    font-weight: 500;
+    color: var(--sas-text-muted);
+    background: transparent;
+    border: none;
+    border-bottom: 2.5px solid transparent;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: color var(--sas-transition), border-color var(--sas-transition);
+    text-decoration: none;
+    line-height: 1;
+}
+
+.sas-filter-btn:hover {
+    color: var(--sas-primary);
+}
+
+.sas-filter-btn.active {
+    color: var(--sas-primary);
+    border-bottom-color: var(--sas-primary);
+    font-weight: 600;
+}
+
+.sas-filter-count {
+    background: var(--sas-bg);
+    color: var(--sas-text-muted);
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 7px;
+    border-radius: 50px;
+    border: 1px solid var(--sas-border);
+    transition: background var(--sas-transition), color var(--sas-transition);
+}
+
+.sas-filter-btn.active .sas-filter-count {
+    background: rgba(232,137,26,0.12);
+    color: var(--sas-primary);
+    border-color: rgba(232,137,26,0.3);
+}
+
+/* ================================================================
+   ARCHIVE — Tools Grid
+================================================================ */
+.sas-grid-section {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 40px 24px 64px;
+}
+
+.sas-section-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 28px;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.sas-showing-label {
+    font-size: 14px;
+    color: var(--sas-text-muted);
+}
+
+.sas-showing-label strong {
+    color: var(--sas-text);
+    font-weight: 600;
+}
+
+.sas-tools-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+}
+
+@media (max-width: 1024px) {
+    .sas-tools-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 600px) {
+    .sas-tools-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+    .sas-grid-section {
+        padding: 24px 16px 48px;
+    }
+}
+
+/* ── Tool Card ───────────────────────────────────────────────── */
+.sas-tool-card {
+    background: var(--sas-card);
+    border-radius: var(--sas-radius);
+    overflow: hidden;
+    border: 1px solid var(--sas-border);
+    box-shadow: var(--sas-shadow);
+    transition: transform var(--sas-transition), box-shadow var(--sas-transition);
+    display: flex;
+    flex-direction: column;
+    text-decoration: none;
+    color: inherit;
+}
+
+.sas-tool-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--sas-shadow-hover);
+    border-color: rgba(232,137,26,0.3);
+    text-decoration: none;
+    color: inherit;
+}
+
+/* Card Thumbnail */
+.sas-card-thumb {
+    position: relative;
+    aspect-ratio: 16/9;
+    overflow: hidden;
+    background: linear-gradient(135deg, #2d1b4e, #1a1a2e);
+    flex-shrink: 0;
+}
+
+.sas-card-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.4s ease;
+    display: block;
+}
+
+.sas-tool-card:hover .sas-card-thumb img {
+    transform: scale(1.05);
+}
+
+/* Placeholder when no image */
+.sas-card-thumb-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 42px;
+    color: rgba(212,168,67,0.5);
+    background: linear-gradient(135deg, #1a1a2e, #2d1b4e);
+}
+
+/* Category badge on image */
+.sas-card-cat-badge {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background: rgba(26,26,46,0.85);
+    color: var(--sas-gold);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    padding: 4px 10px;
+    border-radius: 50px;
+    border: 1px solid rgba(212,168,67,0.3);
+    backdrop-filter: blur(4px);
+    max-width: calc(100% - 20px);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Card Body */
+.sas-card-body {
+    padding: 18px 20px 20px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.sas-card-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--sas-text);
+    margin: 0 0 8px;
+    line-height: 1.35;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.sas-card-excerpt {
+    font-size: 13.5px;
+    color: var(--sas-text-muted);
+    line-height: 1.55;
+    margin: 0 0 16px;
+    flex: 1;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.sas-card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: 14px;
+    border-top: 1px solid var(--sas-border);
+    margin-top: auto;
+}
+
+.sas-card-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--sas-primary);
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: gap var(--sas-transition);
+}
+
+.sas-tool-card:hover .sas-card-cta {
+    gap: 10px;
+}
+
+.sas-card-tags {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.sas-card-tag {
+    font-size: 11px;
+    color: var(--sas-text-muted);
+    background: var(--sas-bg);
+    border: 1px solid var(--sas-border);
+    padding: 2px 8px;
+    border-radius: 50px;
+}
+
+/* ── No Results ──────────────────────────────────────────────── */
+.sas-no-results {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 64px 24px;
+    color: var(--sas-text-muted);
+    display: none;
+}
+
+.sas-no-results.visible {
+    display: block;
+}
+
+.sas-no-results-icon {
+    font-size: 56px;
+    display: block;
+    margin-bottom: 16px;
+    opacity: 0.4;
+}
+
+.sas-no-results h3 {
+    font-size: 20px;
+    color: var(--sas-text);
+    margin: 0 0 8px;
+}
+
+.sas-no-results p {
+    font-size: 14px;
+    margin: 0;
+}
+
+/* ── Hidden card (filter/search) ─────────────────────────────── */
+.sas-tool-card.hidden {
+    display: none;
+}
+
+/* ================================================================
+   SINGLE TOOL PAGE
+================================================================ */
+
+/* Hero Banner */
+.sas-single-hero {
+    position: relative;
+    background: linear-gradient(135deg, var(--sas-darker) 0%, #2d1b4e 100%);
+    overflow: hidden;
+    min-height: 320px;
+    display: flex;
+    align-items: flex-end;
+}
+
+.sas-single-hero-bg {
+    position: absolute;
+    inset: 0;
+    background-size: cover;
+    background-position: center;
+    filter: brightness(0.3) saturate(0.8);
+    z-index: 0;
+}
+
+.sas-single-hero-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top, rgba(26,26,46,0.95) 0%, rgba(26,26,46,0.5) 50%, transparent 100%);
+    z-index: 1;
+}
+
+.sas-single-hero-content {
+    position: relative;
+    z-index: 2;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 40px 24px 48px;
+    width: 100%;
+}
+
+/* Breadcrumb */
+.sas-breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+}
+
+.sas-breadcrumb a,
+.sas-breadcrumb span {
+    font-size: 13px;
+    color: rgba(255,255,255,0.55);
+    text-decoration: none;
+    transition: color var(--sas-transition);
+}
+
+.sas-breadcrumb a:hover {
+    color: var(--sas-gold);
+}
+
+.sas-breadcrumb-sep {
+    color: rgba(255,255,255,0.25);
+    font-size: 11px;
+}
+
+.sas-breadcrumb-current {
+    color: rgba(255,255,255,0.8) !important;
+}
+
+/* Single Title */
+.sas-single-title {
+    color: #FFFFFF !important;
+    font-size: clamp(26px, 4vw, 42px);
+    font-weight: 800;
+    line-height: 1.2;
+    margin: 0 0 16px !important;
+    padding: 0 !important;
+    border: none !important;
+}
+
+/* Single Meta */
+.sas-single-meta {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.sas-single-cat-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(232,137,26,0.2);
+    border: 1px solid rgba(232,137,26,0.4);
+    color: var(--sas-gold);
+    font-size: 12px;
+    font-weight: 600;
+    padding: 5px 14px;
+    border-radius: 50px;
+    text-decoration: none;
+}
+
+.sas-single-cat-badge:hover {
+    background: rgba(232,137,26,0.3);
+    color: var(--sas-gold);
+    text-decoration: none;
+}
+
+/* ── Single Content Layout ───────────────────────────────────── */
+.sas-single-layout {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 48px 24px 80px;
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 40px;
+    align-items: start;
+}
+
+@media (max-width: 960px) {
+    .sas-single-layout {
+        grid-template-columns: 1fr;
+        gap: 32px;
+        padding: 32px 16px 64px;
+    }
+}
+
+/* Main Content Area */
+.sas-single-main {}
+
+/* AIP Form Box */
+.sas-tool-form-box {
+    background: var(--sas-card);
+    border-radius: var(--sas-radius);
+    border: 1px solid var(--sas-border);
+    box-shadow: var(--sas-shadow);
+    overflow: hidden;
+    margin-bottom: 32px;
+}
+
+.sas-tool-form-header {
+    background: linear-gradient(90deg, var(--sas-dark), #2d1b4e);
+    padding: 20px 24px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.sas-tool-form-header-icon {
+    width: 38px;
+    height: 38px;
+    background: rgba(232,137,26,0.2);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--sas-primary);
+    font-size: 18px;
+    flex-shrink: 0;
+}
+
+.sas-tool-form-header h3 {
+    color: #fff;
+    font-size: 17px;
+    font-weight: 700;
+    margin: 0;
+    padding: 0;
+    border: none;
+}
+
+.sas-tool-form-header p {
+    color: rgba(255,255,255,0.55);
+    font-size: 13px;
+    margin: 2px 0 0;
+    padding: 0;
+}
+
+.sas-tool-form-body {
+    padding: 24px;
+}
+
+/* How-to-use Guide Styling */
+.sas-tool-guide {
+    background: var(--sas-card);
+    border-radius: var(--sas-radius);
+    border: 1px solid var(--sas-border);
+    box-shadow: var(--sas-shadow);
+    padding: 32px;
+    margin-bottom: 32px;
+}
+
+.sas-tool-guide h2 {
+    font-size: 20px !important;
+    font-weight: 700 !important;
+    color: var(--sas-dark) !important;
+    margin: 24px 0 12px !important;
+    padding: 0 !important;
+    border: none !important;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.sas-tool-guide h2:first-child {
+    margin-top: 0 !important;
+}
+
+.sas-tool-guide h2::before {
+    content: '';
+    display: inline-block;
+    width: 4px;
+    height: 22px;
+    background: linear-gradient(to bottom, var(--sas-primary), var(--sas-gold));
+    border-radius: 2px;
+    flex-shrink: 0;
+}
+
+.sas-tool-guide ol,
+.sas-tool-guide ul {
+    padding-left: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin: 12px 0 !important;
+}
+
+.sas-tool-guide ol li {
+    counter-increment: step-counter;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    font-size: 15px;
+    color: var(--sas-text);
+    line-height: 1.6;
+}
+
+.sas-tool-guide ol li::before {
+    content: counter(step-counter);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 28px;
+    height: 28px;
+    background: linear-gradient(135deg, var(--sas-primary), var(--sas-primary-dark));
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    border-radius: 50%;
+    flex-shrink: 0;
+    margin-top: 1px;
+}
+
+.sas-tool-guide ol {
+    counter-reset: step-counter;
+}
+
+.sas-tool-guide ul li {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 15px;
+    color: var(--sas-text);
+    line-height: 1.6;
+}
+
+.sas-tool-guide ul li::before {
+    content: '✦';
+    color: var(--sas-primary);
+    font-size: 11px;
+    flex-shrink: 0;
+    margin-top: 4px;
+}
+
+.sas-tool-guide p.sas-tool-intro {
+    font-size: 16px;
+    color: var(--sas-text-muted);
+    line-height: 1.7;
+    margin: 0 0 20px !important;
+    padding: 16px 20px;
+    background: rgba(232,137,26,0.06);
+    border-left: 3px solid var(--sas-primary);
+    border-radius: 0 var(--sas-radius-sm) var(--sas-radius-sm) 0;
+}
+
+/* ── Sidebar ─────────────────────────────────────────────────── */
+.sas-single-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+@media (max-width: 960px) {
+    .sas-single-sidebar {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    }
+}
+
+.sas-sidebar-card {
+    background: var(--sas-card);
+    border-radius: var(--sas-radius);
+    border: 1px solid var(--sas-border);
+    box-shadow: var(--sas-shadow);
+    overflow: hidden;
+}
+
+.sas-sidebar-card-header {
+    padding: 16px 20px 14px;
+    border-bottom: 1px solid var(--sas-border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.sas-sidebar-card-header h4 {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--sas-text);
+    margin: 0;
+    padding: 0;
+    border: none;
+}
+
+.sas-sidebar-card-icon {
+    font-size: 18px;
+    line-height: 1;
+}
+
+/* Related Tools */
+.sas-related-list {
+    padding: 12px 0;
+}
+
+.sas-related-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 20px;
+    text-decoration: none;
+    color: var(--sas-text);
+    transition: background var(--sas-transition);
+    border-bottom: 1px solid var(--sas-border);
+}
+
+.sas-related-item:last-child {
+    border-bottom: none;
+}
+
+.sas-related-item:hover {
+    background: var(--sas-bg);
+    color: var(--sas-text);
+    text-decoration: none;
+}
+
+.sas-related-thumb {
+    width: 48px;
+    height: 48px;
+    border-radius: var(--sas-radius-sm);
+    overflow: hidden;
+    flex-shrink: 0;
+    background: linear-gradient(135deg, #2d1b4e, #1a1a2e);
+}
+
+.sas-related-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.sas-related-thumb-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    color: rgba(212,168,67,0.5);
+}
+
+.sas-related-info {}
+
+.sas-related-name {
+    font-size: 13.5px;
+    font-weight: 600;
+    line-height: 1.3;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    margin-bottom: 3px;
+}
+
+.sas-related-cat {
+    font-size: 11.5px;
+    color: var(--sas-primary);
+    font-weight: 500;
+}
+
+/* Category list in sidebar */
+.sas-cat-list {
+    padding: 8px 0;
+}
+
+.sas-cat-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 9px 20px;
+    text-decoration: none;
+    color: var(--sas-text);
+    font-size: 13.5px;
+    transition: background var(--sas-transition);
+    border-bottom: 1px solid var(--sas-border);
+}
+
+.sas-cat-item:last-child {
+    border-bottom: none;
+}
+
+.sas-cat-item:hover {
+    background: var(--sas-bg);
+    color: var(--sas-primary);
+    text-decoration: none;
+}
+
+.sas-cat-item-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.sas-cat-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--sas-primary);
+    flex-shrink: 0;
+}
+
+.sas-cat-count {
+    font-size: 11.5px;
+    color: var(--sas-text-muted);
+    font-weight: 500;
+    background: var(--sas-bg);
+    border: 1px solid var(--sas-border);
+    padding: 1px 8px;
+    border-radius: 50px;
+}
+
+/* ── Back Button ─────────────────────────────────────────────── */
+.sas-back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255,255,255,0.12);
+    color: rgba(255,255,255,0.75);
+    border: 1px solid rgba(255,255,255,0.2);
+    font-size: 13px;
+    font-weight: 500;
+    padding: 8px 16px;
+    border-radius: 50px;
+    text-decoration: none;
+    transition: background var(--sas-transition), color var(--sas-transition);
+    margin-bottom: 20px;
+    display: inline-flex;
+}
+
+.sas-back-btn:hover {
+    background: rgba(255,255,255,0.2);
+    color: #fff;
+    text-decoration: none;
+}
+
+/* ── Archive link btn ────────────────────────────────────────── */
+.sas-archive-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: linear-gradient(135deg, var(--sas-primary), var(--sas-primary-dark));
+    color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+    padding: 12px 28px;
+    border-radius: 50px;
+    text-decoration: none;
+    transition: opacity var(--sas-transition), transform var(--sas-transition);
+    box-shadow: 0 4px 16px rgba(232,137,26,0.35);
+    margin: 0 auto;
+}
+
+.sas-archive-link:hover {
+    opacity: 0.9;
+    transform: translateY(-2px);
+    color: #fff;
+    text-decoration: none;
+}
+
+/* ================================================================
+   Utilities & Animations
+================================================================ */
+@keyframes sas-fadein {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.sas-tool-card {
+    animation: sas-fadein 0.3s ease both;
+}
+
+.sas-tools-grid .sas-tool-card:nth-child(1)  { animation-delay: 0.02s; }
+.sas-tools-grid .sas-tool-card:nth-child(2)  { animation-delay: 0.04s; }
+.sas-tools-grid .sas-tool-card:nth-child(3)  { animation-delay: 0.06s; }
+.sas-tools-grid .sas-tool-card:nth-child(4)  { animation-delay: 0.08s; }
+.sas-tools-grid .sas-tool-card:nth-child(5)  { animation-delay: 0.10s; }
+.sas-tools-grid .sas-tool-card:nth-child(6)  { animation-delay: 0.12s; }
+
+/* Responsive tweaks */
+@media (max-width: 600px) {
+    .sas-hero { padding: 48px 16px 36px; }
+    .sas-single-hero-content { padding: 24px 16px 36px; }
+    .sas-tool-guide { padding: 20px; }
+    .sas-tool-form-body { padding: 16px; }
+    .sas-filter-inner { padding: 0 12px; }
+    .sas-filter-btn { padding: 12px 14px; }
+}
