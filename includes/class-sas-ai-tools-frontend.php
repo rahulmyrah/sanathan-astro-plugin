@@ -28,6 +28,10 @@ class SAS_AI_Tools_Frontend {
      * Bootstrap hooks.
      */
     public static function init() {
+        // Patch AIP's CPT registration to enable has_archive = 'ai-tools'
+        // This filter fires inside register_post_type() before rules are set.
+        add_filter( 'register_post_type_args', [ __CLASS__, 'enable_cpt_has_archive' ], 10, 2 );
+
         // Ensure taxonomy is registered (public + with archive)
         add_action( 'init', [ __CLASS__, 'register_taxonomy' ], 5 );
 
@@ -43,6 +47,27 @@ class SAS_AI_Tools_Frontend {
         // Add title for archive page
         add_filter( 'get_the_archive_title', [ __CLASS__, 'archive_title' ] );
         add_filter( 'document_title_parts',  [ __CLASS__, 'document_title' ] );
+    }
+
+    /**
+     * Patch AIP's ai-toolai_tool CPT to enable a public archive at /ai-tools/.
+     *
+     * AIP registers the CPT with has_archive = false. This filter overrides that
+     * so WordPress creates the /ai-tools/ rewrite rule. After deploying, flush
+     * permalinks once (Settings → Permalinks → Save Changes).
+     *
+     * @param  array  $args      Original CPT args.
+     * @param  string $post_type Post type slug.
+     * @return array
+     */
+    public static function enable_cpt_has_archive( $args, $post_type ) {
+        if ( $post_type === self::CPT ) {
+            $args['has_archive']       = 'ai-tools';
+            $args['public']            = true;
+            $args['publicly_queryable']= true;
+            $args['show_in_nav_menus'] = true;
+        }
+        return $args;
     }
 
     /**
