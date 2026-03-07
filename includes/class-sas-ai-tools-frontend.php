@@ -159,6 +159,12 @@ class SAS_AI_Tools_Frontend {
                 SAS_VERSION
             );
 
+            // Inline CSS bypasses server-side file cache (LiteSpeed / Hostinger CDN).
+            // Hides the SocialV theme's breadcrumb banner — our hero provides its own.
+            wp_add_inline_style( 'sas-ai-tools',
+                '.socialv-breadcrumb { display: none !important; }'
+            );
+
             wp_enqueue_script(
                 'sas-ai-tools',
                 SAS_PLUGIN_URL . 'public/js/ai-tools.js',
