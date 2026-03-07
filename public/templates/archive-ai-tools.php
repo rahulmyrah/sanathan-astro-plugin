@@ -55,19 +55,19 @@ get_header();
         <div class="sas-hero-inner">
             <div class="sas-hero-eyebrow">
                 <span>✦</span>
-                <?php echo esc_html( $active_cat_name ?: __( 'AI Tools', 'sanathan-astro' ) ); ?>
+                <?php echo esc_html( $active_cat_name ?: __( 'DHARMA GUIDES', 'sanathan-astro' ) ); ?>
             </div>
 
             <h1>
                 <?php if ( $active_cat_name ) : ?>
-                    <?php echo esc_html( $active_cat_name ); ?> <span><?php esc_html_e( 'Tools', 'sanathan-astro' ); ?></span>
+                    <?php echo esc_html( $active_cat_name ); ?> <span style="color:var(--sas-primary);"><?php esc_html_e( 'Sahayaks', 'sanathan-astro' ); ?></span>
                 <?php else : ?>
-                    <?php esc_html_e( 'Vedic', 'sanathan-astro' ); ?> <span><?php esc_html_e( 'AI Tools', 'sanathan-astro' ); ?></span>
+                    <?php esc_html_e( 'Dharma', 'sanathan-astro' ); ?> <span style="color:var(--sas-primary);"><?php esc_html_e( 'Sahayaks', 'sanathan-astro' ); ?></span>
                 <?php endif; ?>
             </h1>
 
             <p class="sas-hero-desc">
-                <?php esc_html_e( 'Explore our collection of AI-powered Vedic astrology tools. Get personalized insights on kundali, doshas, mantras, and spiritual guidance.', 'sanathan-astro' ); ?>
+                <?php esc_html_e( 'Guides rooted in Vedic shastra — for your Kundali, your Mantra, your Vaastu, your Festivals, and every step of your Sanathan journey. In your own language.', 'sanathan-astro' ); ?>
             </p>
 
             <!-- Search -->
@@ -76,9 +76,9 @@ get_header();
                     type="search"
                     id="sas-search"
                     class="sas-search-input"
-                    placeholder="<?php esc_attr_e( 'Search tools…', 'sanathan-astro' ); ?>"
+                    placeholder="<?php esc_attr_e( 'Search guides…', 'sanathan-astro' ); ?>"
                     autocomplete="off"
-                    aria-label="<?php esc_attr_e( 'Search AI Tools', 'sanathan-astro' ); ?>"
+                    aria-label="<?php esc_attr_e( 'Search Dharma Guides', 'sanathan-astro' ); ?>"
                 >
                 <svg class="sas-search-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
@@ -97,7 +97,7 @@ get_header();
                 data-cat="all"
                 aria-pressed="<?php echo ! $active_cat_slug ? 'true' : 'false'; ?>"
             >
-                <?php esc_html_e( 'All Tools', 'sanathan-astro' ); ?>
+                <?php esc_html_e( 'All Guides', 'sanathan-astro' ); ?>
                 <span class="sas-filter-count"><?php echo (int) $tools_query->found_posts; ?></span>
             </button>
 
@@ -121,7 +121,7 @@ get_header();
             <span class="sas-showing-label" id="sas-count-label" aria-live="polite">
                 <?php
                 printf(
-                    esc_html__( 'Showing %1$s of %2$s tools', 'sanathan-astro' ),
+                    esc_html__( 'Showing %1$s of %2$s guides', 'sanathan-astro' ),
                     '<strong>' . (int) $tools_query->found_posts . '</strong>',
                     '<strong>' . (int) $tools_query->found_posts . '</strong>'
                 );
@@ -213,15 +213,15 @@ get_header();
             <?php else : ?>
                 <div class="sas-no-results visible" id="sas-no-results">
                     <span class="sas-no-results-icon">✦</span>
-                    <h3><?php esc_html_e( 'No tools found', 'sanathan-astro' ); ?></h3>
-                    <p><?php esc_html_e( 'Check back soon — new tools are added regularly.', 'sanathan-astro' ); ?></p>
+                    <h3><?php esc_html_e( 'No guides found', 'sanathan-astro' ); ?></h3>
+                    <p><?php esc_html_e( 'Check back soon — new guides are added regularly.', 'sanathan-astro' ); ?></p>
                 </div>
             <?php endif; ?>
 
             <!-- JS inserts this when search/filter yields zero results -->
             <div class="sas-no-results" id="sas-no-results" aria-live="polite">
                 <span class="sas-no-results-icon">🔍</span>
-                <h3><?php esc_html_e( 'No tools match your search', 'sanathan-astro' ); ?></h3>
+                <h3><?php esc_html_e( 'No guides match your search', 'sanathan-astro' ); ?></h3>
                 <p><?php esc_html_e( 'Try a different keyword or browse all categories.', 'sanathan-astro' ); ?></p>
             </div>
         </div>
