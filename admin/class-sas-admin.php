@@ -446,14 +446,14 @@ class SAS_Admin {
         $settings    = sas_get_settings();
         $gemini_key  = $settings['gemini_api_key'] ?? '';
         $skip_list   = self::ai_tools_skip_list();
-        $cpt         = 'ai-toolai_tool';
+        $cpt         = 'ai_tool';
         $taxonomy    = 'ai_tool_category';
         $tag_tax     = 'ai_tool_tag';
 
         // Get all AIP forms
         global $wpdb;
         $forms = $wpdb->get_results(
-            "SELECT ID, post_title FROM {$wpdb->posts} WHERE post_type = 'wpaicg_form' AND post_status = 'publish' ORDER BY post_title ASC"
+            "SELECT ID, post_title FROM {$wpdb->posts} WHERE post_type = 'aipkit_form' AND post_status = 'publish' ORDER BY post_title ASC"
         );
 
         // Get existing AI Tool post titles (lowercase) to detect duplicates
@@ -555,7 +555,7 @@ class SAS_Admin {
 
         $settings   = sas_get_settings();
         $gemini_key = $settings['gemini_api_key'] ?? '';
-        $cpt        = 'ai-toolai_tool';
+        $cpt        = 'ai_tool';
         $taxonomy   = 'ai_tool_category';
         $tag_tax    = 'ai_tool_tag';
 
@@ -637,7 +637,7 @@ class SAS_Admin {
         require_once ABSPATH . 'wp-admin/includes/file.php';
         require_once ABSPATH . 'wp-admin/includes/media.php';
 
-        $cpt = 'ai-toolai_tool';
+        $cpt = 'ai_tool';
 
         // Only posts without a featured image
         $posts = get_posts( [
