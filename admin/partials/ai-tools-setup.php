@@ -33,7 +33,7 @@ $without_guide = (int) $wpdb->get_var(
      WHERE post_type = '{$cpt}' AND post_status = 'publish' AND post_content NOT LIKE '%sas-tool-guide%'"
 );
 $total_aip_forms = (int) $wpdb->get_var(
-    "SELECT COUNT(*) FROM {$wpdb->posts} WHERE post_type = 'aipkit_form' AND post_status = 'publish'"
+    "SELECT COUNT(*) FROM {$wpdb->posts} WHERE post_type = 'wpaicg_form' AND post_status = 'publish'"
 );
 $cat_count = wp_count_terms( [ 'taxonomy' => $taxonomy, 'hide_empty' => false ] );
 if ( is_wp_error( $cat_count ) ) $cat_count = 0;

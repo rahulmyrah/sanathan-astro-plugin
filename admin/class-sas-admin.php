@@ -453,7 +453,7 @@ class SAS_Admin {
         // Get all AIP forms
         global $wpdb;
         $forms = $wpdb->get_results(
-            "SELECT ID, post_title FROM {$wpdb->posts} WHERE post_type = 'aipkit_form' AND post_status = 'publish' ORDER BY post_title ASC"
+            "SELECT ID, post_title FROM {$wpdb->posts} WHERE post_type = 'wpaicg_form' AND post_status = 'publish' ORDER BY post_title ASC"
         );
 
         // Get existing AI Tool post titles (lowercase) to detect duplicates
