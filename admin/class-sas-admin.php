@@ -39,6 +39,7 @@ class SAS_Admin {
         add_action( 'wp_ajax_sas_import_ai_tools',         [ __CLASS__, 'handle_import_ai_tools' ] );
         add_action( 'wp_ajax_sas_update_existing_ai_tools',[ __CLASS__, 'handle_update_existing_ai_tools' ] );
         add_action( 'wp_ajax_sas_generate_ai_tool_images', [ __CLASS__, 'handle_generate_ai_tool_images' ] );
+        add_action( 'wp_ajax_sas_cleanup_ai_tool_titles',  [ __CLASS__, 'handle_cleanup_ai_tool_titles' ] );
     }
 
     // ── Menu ──────────────────────────────────────────────────────────────────
@@ -715,6 +716,47 @@ class SAS_Admin {
             'generated' => $generated,
             'errors'    => $errors,
             'total'     => count( $posts ),
+        ] );
+    }
+
+    /**
+     * Strip " (Imported)" suffix from all ai-toolai_tool post titles and slugs.
+     */
+    public static function handle_cleanup_ai_tool_titles(): void {
+        check_ajax_referer( 'sas_cleanup_ai_tool_titles', 'nonce' );
+        if ( ! current_user_can( 'manage_options' ) ) {
+            wp_send_json_error( [ 'message' => 'Permission denied.' ] );
+        }
+
+        global $wpdb;
+        $cpt = 'ai-toolai_tool';
+
+        $posts = $wpdb->get_results( $wpdb->prepare(
+            "SELECT ID, post_title, post_name FROM {$wpdb->posts}
+             WHERE post_type = %s AND post_status = 'publish'
+             AND post_title LIKE %s",
+            $cpt,
+            '%' . $wpdb->esc_like( ' (Imported)' ) . '%'
+        ) );
+
+        $cleaned = 0;
+        foreach ( $posts as $post ) {
+            $new_title = trim( str_replace( ' (Imported)', '', $post->post_title ) );
+            $new_slug  = sanitize_title( $new_title );
+            $wpdb->update(
+                $wpdb->posts,
+                [ 'post_title' => $new_title, 'post_name' => $new_slug ],
+                [ 'ID' => $post->ID ],
+                [ '%s', '%s' ],
+                [ '%d' ]
+            );
+            clean_post_cache( $post->ID );
+            $cleaned++;
+        }
+
+        wp_send_json_success( [
+            'cleaned' => $cleaned,
+            'total'   => count( $posts ),
         ] );
     }
 

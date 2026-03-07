@@ -183,9 +183,34 @@ if ( is_wp_error( $cat_count ) ) $cat_count = 0;
         <div id="sas-images-result" style="margin-top:10px;"></div>
     </div>
 
-    <!-- ── Step 5: Next Steps (Elementor) ────────────────────────────────────── -->
+    <!-- ── Step 5: Cleanup (Imported) Titles ───────────────────────────────── -->
+    <?php
+    $with_imported = (int) $wpdb->get_var( $wpdb->prepare(
+        "SELECT COUNT(*) FROM {$wpdb->posts} WHERE post_type = %s AND post_status = 'publish' AND post_title LIKE %s",
+        $cpt, '%' . $wpdb->esc_like( ' (Imported)' ) . '%'
+    ) );
+    ?>
+    <div class="sas-setup-card">
+        <h2 style="margin-top:0;">Step 5 — 🧹 <?php esc_html_e( 'Cleanup "(Imported)" Titles', 'sanathan-astro' ); ?></h2>
+        <p>
+            <?php printf(
+                esc_html__( '%d posts currently have "(Imported)" in their title. This strips the suffix from the post title and URL slug.', 'sanathan-astro' ),
+                $with_imported
+            ); ?>
+        </p>
+        <button type="button" id="sas-cleanup-titles" class="button button-secondary" <?php disabled( $with_imported === 0 ); ?>>
+            🧹 <?php esc_html_e( 'Cleanup Titles', 'sanathan-astro' ); ?>
+        </button>
+        <div id="sas-cleanup-progress" style="margin-top:10px; display:none;">
+            <span class="spinner is-active" style="float:none; margin:0 8px 0 0;"></span>
+            <?php esc_html_e( 'Cleaning up titles…', 'sanathan-astro' ); ?>
+        </div>
+        <div id="sas-cleanup-result" style="margin-top:10px;"></div>
+    </div>
+
+    <!-- ── Step 6: Next Steps (Elementor) ────────────────────────────────────── -->
     <div class="sas-setup-card" style="background:#f9f9f9;">
-        <h2 style="margin-top:0;">Step 5 — 🎨 <?php esc_html_e( 'Create Elementor Templates', 'sanathan-astro' ); ?></h2>
+        <h2 style="margin-top:0;">Step 6 — 🎨 <?php esc_html_e( 'Create Elementor Templates', 'sanathan-astro' ); ?></h2>
         <p><?php esc_html_e( 'After importing posts, create two Elementor Theme Builder templates:', 'sanathan-astro' ); ?></p>
         <ol>
             <li>
@@ -348,6 +373,31 @@ jQuery(function($){
         }).fail(function(){
             $('#sas-images-progress').hide();
             $('#sas-images-result').css('color','red').text('❌ Request timed out. Try again — already-generated images are skipped.');
+        }).always(function(){ $btn.prop('disabled', false); });
+    });
+
+    // ── Cleanup (Imported) Titles ──────────────────────────────────────────────
+    $('#sas-cleanup-titles').on('click', function(){
+        var $btn = $(this).prop('disabled', true);
+        $('#sas-cleanup-progress').show();
+        $('#sas-cleanup-result').html('');
+
+        $.post(ajaxurl, {
+            action: 'sas_cleanup_ai_tool_titles',
+            nonce:  '<?php echo esc_js( wp_create_nonce( 'sas_cleanup_ai_tool_titles' ) ); ?>'
+        }, function(res){
+            $('#sas-cleanup-progress').hide();
+            if (res.success && res.data) {
+                var d = res.data;
+                $('#sas-cleanup-result').css('color','green').html(
+                    '✅ Cleaned <strong>' + d.cleaned + '</strong> post titles.'
+                );
+            } else {
+                $('#sas-cleanup-result').css('color','red').text('❌ ' + (res.data?.message || 'Failed.'));
+            }
+        }).fail(function(){
+            $('#sas-cleanup-progress').hide();
+            $('#sas-cleanup-result').css('color','red').text('❌ Request failed.');
         }).always(function(){ $btn.prop('disabled', false); });
     });
 
