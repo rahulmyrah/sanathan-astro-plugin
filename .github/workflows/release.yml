@@ -1,0 +1,37 @@
+name: Build & Release ZIP
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Read version from plugin header
+        id: version
+        run: |
+          VERSION=$(grep -oP "define\s*\(\s*'SAS_VERSION'\s*,\s*'\K[^']+" sanathan-app.php)
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Plugin version: $VERSION"
+
+      - name: Build ZIP with correct folder structure
+        run: |
+          mkdir -p /tmp/sanathan-app
+          rsync -a --exclude='.git' --exclude='.github' --exclude='make-zip.ps1' . /tmp/sanathan-app/
+          cd /tmp
+          zip -r sanathan-app.zip sanathan-app/
+
+      - name: Create GitHub Release & upload ZIP
+        uses: softprops/action-gh-release@v2
+        with:
+          name: v${{ steps.version.outputs.version }}
+          generate_release_notes: true
+          files: /tmp/sanathan-app.zip
