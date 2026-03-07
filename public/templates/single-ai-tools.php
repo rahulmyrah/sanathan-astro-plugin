@@ -35,7 +35,9 @@ $post_cats   = wp_get_post_terms( $post_id, 'ai_tool_category', [ 'orderby' => '
 $primary_cat = ( ! is_wp_error( $post_cats ) && ! empty( $post_cats ) ) ? $post_cats[0] : null;
 
 // Split content: shortcode vs guide
-$content_raw = get_the_content();
+// Use get_post_field('raw') to bypass Elementor's get_the_content filter which
+// replaces the raw post_content with its own fully-rendered HTML.
+$content_raw = get_post_field( 'post_content', $post_id, 'raw' );
 
 // Separate the AIP shortcode from the how-to-use guide
 $form_shortcode = '';
