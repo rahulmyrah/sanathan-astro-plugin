@@ -151,8 +151,12 @@ get_header();
             <?php if ( $guide_html ) : ?>
             <div class="sas-tool-guide">
                 <?php
-                // Apply standard WordPress content filters (wpautop etc.)
-                echo wp_kses_post( apply_filters( 'the_content', $guide_html ) );
+                // Guide content was stored with double-escaped HTML entities
+                // (e.g. &lt;h3&gt; instead of <h3>) — decode before output.
+                $guide_decoded = html_entity_decode( $guide_html, ENT_QUOTES | ENT_HTML5, 'UTF-8' );
+                // Strip empty <p> tags left over from shortcode removal + wpautop
+                $guide_decoded = preg_replace( '/<p[^>]*>[\s\xc2\xa0]*<\/p>/u', '', $guide_decoded );
+                echo wp_kses_post( $guide_decoded );
                 ?>
             </div>
             <?php endif; ?>
