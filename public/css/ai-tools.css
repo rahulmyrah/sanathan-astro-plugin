@@ -3,6 +3,13 @@
    Plugin: sanathan-astro-services  |  Version: 1.4.0
 ================================================================ */
 
+/* ── Theme overrides ───────────────────────────────────────── */
+/* Hide the SocialV theme's breadcrumb banner — our hero provides its own */
+body.single-ai-toolai_tool .socialv-breadcrumb,
+body.post-type-archive-ai-toolai_tool .socialv-breadcrumb {
+    display: none !important;
+}
+
 /* ── Variables ─────────────────────────────────────────────── */
 :root {
     --sas-primary:      #E8891A;
