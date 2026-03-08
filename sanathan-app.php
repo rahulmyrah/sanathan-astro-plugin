@@ -3,7 +3,7 @@
  * Plugin Name:       Sanathan Astro Services
  * Plugin URI:        https://sanathan.app
  * Description:       Cached Predictions, Kundali storage, Personal Guruji AI (Qdrant RAG), and FCM push notifications for the Sanathan Astrology platform. Powers the Flutter mobile app via REST API.
- * Version:           1.4.7
+ * Version:           1.4.8
  * Author:            Sanathan App
  * Author URI:        https://sanathan.app
  * License:           GPL-2.0+
@@ -16,7 +16,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-define( 'SAS_VERSION',     '1.4.7' );
+define( 'SAS_VERSION',     '1.4.8' );
 define( 'SAS_PLUGIN_DIR',  plugin_dir_path( __FILE__ ) );
 define( 'SAS_PLUGIN_URL',  plugin_dir_url( __FILE__ ) );
 define( 'SAS_PLUGIN_FILE', __FILE__ );
@@ -56,6 +56,7 @@ require_once SAS_PLUGIN_DIR . 'includes/class-sas-guruji.php';
 require_once SAS_PLUGIN_DIR . 'includes/class-sas-rest-api.php';
 require_once SAS_PLUGIN_DIR . 'includes/class-sas-updater.php';
 require_once SAS_PLUGIN_DIR . 'includes/class-sas-ai-tools-frontend.php';
+require_once SAS_PLUGIN_DIR . 'includes/class-sas-home.php';
 
 if ( is_admin() ) {
     require_once SAS_PLUGIN_DIR . 'admin/class-sas-admin.php';
@@ -84,6 +85,9 @@ function sas_boot() {
 
     // AI Tools frontend templates, assets, and taxonomy registration
     SAS_AI_Tools_Frontend::init();
+
+    // Home page shortcodes ([sas_home_hero], [sas_home_features], etc.)
+    SAS_Home::init();
 
     // ── GitHub auto-updater ───────────────────────────────────────────────────
     // Fetches plugin-info.json from GitHub main branch (repo root).
