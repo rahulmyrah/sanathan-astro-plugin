@@ -37,6 +37,72 @@ class SAS_Home {
 		add_shortcode( 'sas_home_services_preview', [ __CLASS__, 'render_services_preview' ] );
 		add_shortcode( 'sas_home_cta',              [ __CLASS__, 'render_cta' ] );
 		add_action( 'wp_enqueue_scripts',            [ __CLASS__, 'enqueue_assets' ] );
+
+		// Fix Directorist single-category page: replace "Single Category" with real term name
+		add_filter( 'the_title',              [ __CLASS__, 'fix_directorist_category_title' ], 20, 2 );
+		add_filter( 'document_title_parts',   [ __CLASS__, 'fix_directorist_document_title' ], 20 );
+	}
+
+	/* ─────────────────────────────────────────
+	 * DIRECTORIST CATEGORY TITLE FIX
+	 * Replaces the generic "Single Category" page title with the real
+	 * Directorist category term name when browsing /single-category*/…/
+	 * ───────────────────────────────────────── */
+
+	/**
+	 * Detect the Directorist category slug from REQUEST_URI and return its term name.
+	 * Returns null if not on a Directorist category URL.
+	 *
+	 * @return string|null
+	 */
+	private static function get_directorist_category_name_from_url() {
+		$uri = isset( $_SERVER['REQUEST_URI'] ) ? $_SERVER['REQUEST_URI'] : '';
+		// Matches /single-category[…]/some-slug/ (any variant of the page slug)
+		if ( preg_match( '#/single-category[^/]*/([^/?#\s]+)#i', $uri, $m ) ) {
+			$cat_slug = sanitize_title( $m[1] );
+			$term     = get_term_by( 'slug', $cat_slug, 'at_biz_dir-category' );
+			if ( $term && ! is_wp_error( $term ) ) {
+				return $term->name;
+			}
+		}
+		return null;
+	}
+
+	/**
+	 * Filter: swap "Single Category" in page title/hero/breadcrumb with real category name.
+	 *
+	 * @param string $title   Current title.
+	 * @param int    $post_id Post ID.
+	 * @return string
+	 */
+	public static function fix_directorist_category_title( $title, $post_id ) {
+		if ( is_admin() || wp_doing_ajax() ) return $title;
+
+		$post = get_post( $post_id );
+		if ( ! $post || $post->post_type !== 'page' ) return $title;
+		if ( strpos( $post->post_name, 'single-category' ) === false ) return $title;
+
+		$name = self::get_directorist_category_name_from_url();
+		return $name ?: $title;
+	}
+
+	/**
+	 * Filter: fix browser tab / SEO document title for Directorist category pages.
+	 *
+	 * @param array $parts Title parts array.
+	 * @return array
+	 */
+	public static function fix_directorist_document_title( $parts ) {
+		if ( is_admin() ) return $parts;
+
+		global $post;
+		if ( ! $post || strpos( $post->post_name, 'single-category' ) === false ) return $parts;
+
+		$name = self::get_directorist_category_name_from_url();
+		if ( $name ) {
+			$parts['title'] = $name;
+		}
+		return $parts;
 	}
 
 	/**
