@@ -12,6 +12,11 @@
  *   5  Guru          ₹4,999/year recurring        → SAS_TIER_FULL
  *
  * Paid members (Core/Full) bypass the 1-free-edit restriction on birth details.
+ *
+ * Multi-currency: Auto-detects visitor country via Cloudflare header (CF-IPCountry)
+ * or ipapi.co fallback. IN → INR, GB/IE → GBP, all others → USD.
+ * PMPro currency is overridden in-memory per request via option_pmpro_options filter.
+ * USD/GBP prices are stored in sas_settings and admin-configurable.
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -41,6 +46,7 @@ class SAS_Membership {
     public static function init(): void {
         add_shortcode( 'sas_pricing_table', [ __CLASS__, 'render_pricing_table' ] );
         add_action( 'wp_enqueue_scripts', [ __CLASS__, 'enqueue_assets' ] );
+        self::register_pmpro_hooks();
     }
 
     // ── Assets ───────────────────────────────────────────────────────────────
@@ -66,13 +72,16 @@ class SAS_Membership {
             true
         );
 
-        $user_id = get_current_user_id();
+        $user_id  = get_current_user_id();
+        $currency = $user_id ? self::get_user_currency() : self::get_user_currency();
         wp_localize_script( 'sas-pricing', 'sasPricing', [
-            'loginUrl'    => wp_login_url( get_permalink() ),
-            'accountUrl'  => function_exists( 'pmpro_url' ) ? pmpro_url( 'account' ) : home_url( '/membership-account/' ),
-            'checkoutUrl' => function_exists( 'pmpro_url' ) ? pmpro_url( 'checkout' ) : home_url( '/membership-checkout/' ),
-            'isLoggedIn'  => is_user_logged_in() ? 'yes' : 'no',
-            'currentTier' => $user_id ? self::get_user_tier( $user_id ) : SAS_TIER_FREE,
+            'loginUrl'       => wp_login_url( get_permalink() ),
+            'accountUrl'     => function_exists( 'pmpro_url' ) ? pmpro_url( 'account' ) : home_url( '/membership-account/' ),
+            'checkoutUrl'    => function_exists( 'pmpro_url' ) ? pmpro_url( 'checkout' ) : home_url( '/membership-checkout/' ),
+            'isLoggedIn'     => is_user_logged_in() ? 'yes' : 'no',
+            'currentTier'    => $user_id ? self::get_user_tier( $user_id ) : SAS_TIER_FREE,
+            'currency'       => $currency,
+            'currencySymbol' => self::get_currency_symbol( $currency ),
         ] );
     }
 
@@ -124,11 +133,150 @@ class SAS_Membership {
         return home_url( '/membership-checkout/?level=' . $level_id );
     }
 
+    // ── Geo + Currency ───────────────────────────────────────────────────────
+
+    /**
+     * Detect visitor ISO country code.
+     * Priority: Cloudflare CF-IPCountry header → ipapi.co fallback → transient cache (24h).
+     */
+    public static function get_user_country(): string {
+        // Cloudflare header — set automatically by Cloudflare (zero cost)
+        $cf = $_SERVER['HTTP_CF_IPCOUNTRY'] ?? '';
+        if ( $cf && preg_match( '/^[A-Z]{2}$/', $cf ) ) {
+            return strtoupper( $cf );
+        }
+
+        $ip = $_SERVER['REMOTE_ADDR'] ?? '';
+
+        // Transient cache keyed by IP (24h TTL)
+        $cache_key = 'sas_country_' . md5( $ip );
+        $cached    = get_transient( $cache_key );
+        if ( $cached ) {
+            return (string) $cached;
+        }
+
+        // ipapi.co fallback (1,000 req/day free tier)
+        if ( $ip && filter_var( $ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE ) ) {
+            $response = wp_remote_get(
+                'https://ipapi.co/' . rawurlencode( $ip ) . '/country/',
+                [ 'timeout' => 3 ]
+            );
+            if ( ! is_wp_error( $response ) ) {
+                $country = strtoupper( trim( wp_remote_retrieve_body( $response ) ) );
+                if ( preg_match( '/^[A-Z]{2}$/', $country ) ) {
+                    set_transient( $cache_key, $country, DAY_IN_SECONDS );
+                    return $country;
+                }
+            }
+        }
+
+        return 'US'; // safe default → USD
+    }
+
+    /**
+     * Map visitor country to currency code.
+     * IN → INR | GB/IE → GBP | all others → USD
+     */
+    public static function get_user_currency(): string {
+        $country = self::get_user_country();
+        if ( $country === 'IN' ) {
+            return 'INR';
+        }
+        if ( in_array( $country, [ 'GB', 'IE' ], true ) ) {
+            return 'GBP';
+        }
+        return 'USD';
+    }
+
+    /** Currency code → display symbol. */
+    public static function get_currency_symbol( string $currency ): string {
+        return match ( $currency ) {
+            'INR' => '₹',
+            'GBP' => '£',
+            default => '$',
+        };
+    }
+
+    /**
+     * Return [ level_id => billing_amount ] for a given currency.
+     * INR → always live from PMPro (pmpro_getLevel) as source of truth.
+     * USD/GBP → from sas_settings with hard-coded fallbacks.
+     */
+    public static function get_prices_for_currency( string $currency ): array {
+        if ( $currency === 'INR' && function_exists( 'pmpro_getLevel' ) ) {
+            return [
+                2 => (float) ( pmpro_getLevel( 2 )->billing_amount ?? 299 ),
+                3 => (float) ( pmpro_getLevel( 3 )->billing_amount ?? 2499 ),
+                4 => (float) ( pmpro_getLevel( 4 )->billing_amount ?? 599 ),
+                5 => (float) ( pmpro_getLevel( 5 )->billing_amount ?? 4999 ),
+            ];
+        }
+
+        $key    = strtolower( $currency ) . '_prices';
+        $s      = sas_get_settings();
+        $prices = $s[ $key ] ?? [];
+
+        return [
+            2 => (float) ( $prices['sadhak_monthly'] ?? ( $currency === 'GBP' ? 3.49  : 3.99  ) ),
+            3 => (float) ( $prices['sadhak_annual']  ?? ( $currency === 'GBP' ? 34.99 : 39.99 ) ),
+            4 => (float) ( $prices['guru_monthly']   ?? ( $currency === 'GBP' ? 6.99  : 7.99  ) ),
+            5 => (float) ( $prices['guru_annual']    ?? ( $currency === 'GBP' ? 69.99 : 79.99 ) ),
+        ];
+    }
+
+    /**
+     * Register PMPro filters to override currency and billing amounts per request.
+     * Uses only free WordPress hooks — no PMPro paid add-ons required.
+     */
+    public static function register_pmpro_hooks(): void {
+        // Override PMPro's stored global currency in-memory (no DB modification)
+        add_filter( 'option_pmpro_options', function ( $options ) {
+            $currency = self::get_user_currency();
+            if ( $currency !== 'INR' ) {
+                $options['currency']        = $currency;
+                $options['currency_symbol'] = self::get_currency_symbol( $currency );
+            }
+            return $options;
+        } );
+
+        // Override billing_amount and initial_payment at checkout time
+        add_filter( 'pmpro_checkout_level', function ( $level ) {
+            if ( empty( $level->id ) ) {
+                return $level;
+            }
+            $currency = self::get_user_currency();
+            if ( $currency === 'INR' ) {
+                return $level;
+            }
+            $prices = self::get_prices_for_currency( $currency );
+            $amount = $prices[ (int) $level->id ] ?? null;
+            if ( $amount !== null ) {
+                $level->billing_amount  = $amount;
+                $level->initial_payment = $amount;
+                $level->trial_amount    = 0;
+            }
+            return $level;
+        } );
+    }
+
     // ── Pricing table shortcode ──────────────────────────────────────────────
 
     public static function render_pricing_table(): string {
         $user_id      = get_current_user_id();
         $current_tier = $user_id ? self::get_user_tier( $user_id ) : SAS_TIER_FREE;
+
+        // Currency + prices for this visitor
+        $currency = self::get_user_currency();
+        $symbol   = self::get_currency_symbol( $currency );
+        $prices   = self::get_prices_for_currency( $currency );
+        $decimals = ( $currency === 'INR' ) ? 0 : 2;
+
+        $p_sadhak_mo    = number_format( $prices[2], $decimals );
+        $p_sadhak_yr    = number_format( $prices[3], $decimals );
+        $p_guru_mo      = number_format( $prices[4], $decimals );
+        $p_guru_yr      = number_format( $prices[5], $decimals );
+        $p_sadhak_mo_eq = number_format( $prices[3] / 12, $decimals );
+        $p_guru_mo_eq   = number_format( $prices[5] / 12, $decimals );
 
         // CTA destinations
         $login_url   = wp_login_url( get_permalink() );
@@ -186,7 +334,7 @@ class SAS_Membership {
 
                     <div class="sas-pt-price-box">
                         <div class="sas-pt-price-row">
-                            <span class="sas-pt-currency">&#8377;</span>
+                            <span class="sas-pt-currency"><?php echo esc_html( $symbol ); ?></span>
                             <span class="sas-pt-amount">0</span>
                         </div>
                         <p class="sas-pt-period">Free forever</p>
@@ -234,13 +382,13 @@ class SAS_Membership {
 
                     <div class="sas-pt-price-box">
                         <div class="sas-pt-price-row">
-                            <span class="sas-pt-currency">&#8377;</span>
-                            <span class="sas-pt-amount sas-pt-monthly-price">299</span>
-                            <span class="sas-pt-amount sas-pt-annual-price" hidden>208</span>
+                            <span class="sas-pt-currency"><?php echo esc_html( $symbol ); ?></span>
+                            <span class="sas-pt-amount sas-pt-monthly-price"><?php echo esc_html( $p_sadhak_mo ); ?></span>
+                            <span class="sas-pt-amount sas-pt-annual-price" hidden><?php echo esc_html( $p_sadhak_mo_eq ); ?></span>
                         </div>
                         <p class="sas-pt-period sas-pt-monthly-period">/month</p>
                         <p class="sas-pt-period sas-pt-annual-period" hidden>
-                            /month &middot; &#8377;2,499 billed annually
+                            /month &middot; <?php echo esc_html( $symbol . $p_sadhak_yr ); ?> billed annually
                         </p>
                     </div>
 
@@ -278,13 +426,13 @@ class SAS_Membership {
 
                     <div class="sas-pt-price-box">
                         <div class="sas-pt-price-row">
-                            <span class="sas-pt-currency">&#8377;</span>
-                            <span class="sas-pt-amount sas-pt-monthly-price">599</span>
-                            <span class="sas-pt-amount sas-pt-annual-price" hidden>416</span>
+                            <span class="sas-pt-currency"><?php echo esc_html( $symbol ); ?></span>
+                            <span class="sas-pt-amount sas-pt-monthly-price"><?php echo esc_html( $p_guru_mo ); ?></span>
+                            <span class="sas-pt-amount sas-pt-annual-price" hidden><?php echo esc_html( $p_guru_mo_eq ); ?></span>
                         </div>
                         <p class="sas-pt-period sas-pt-monthly-period">/month</p>
                         <p class="sas-pt-period sas-pt-annual-period" hidden>
-                            /month &middot; &#8377;4,999 billed annually
+                            /month &middot; <?php echo esc_html( $symbol . $p_guru_yr ); ?> billed annually
                         </p>
                     </div>
 
@@ -312,7 +460,7 @@ class SAS_Membership {
                 <span>&#128274; Secure Payments via Stripe</span>
                 <span>&#128241; Works on Web &amp; App</span>
                 <span>&#8617;&#65039; Cancel anytime</span>
-                <span>&#127470;&#127475; INR pricing</span>
+                <span>&#128179; <?php echo esc_html( $currency ); ?> pricing</span>
             </div>
 
         </div><!-- .sas-pricing-wrap -->

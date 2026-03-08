@@ -218,6 +218,52 @@ $current_model = $settings['aip_model'] ?? 'gpt-4o-mini';
             </tr>
         </table>
 
+        <!-- ── International Pricing ──────────────────────────────────────── -->
+        <h2>🌍 <?php esc_html_e( 'International Pricing (USD &amp; GBP)', 'sanathan-astro' ); ?></h2>
+        <p><?php esc_html_e( 'INR prices are set in PMPro → Membership Levels (source of truth). USD and GBP prices below are applied automatically based on visitor country (India → INR, UK/Ireland → GBP, all others → USD).', 'sanathan-astro' ); ?></p>
+        <table class="form-table">
+            <tr>
+                <th><label><?php esc_html_e( 'Sadhak Monthly', 'sanathan-astro' ); ?></label></th>
+                <td>
+                    <label>USD $&nbsp;<input type="number" step="0.01" min="0" name="sas_settings[usd_prices][sadhak_monthly]"
+                        value="<?php echo esc_attr( $settings['usd_prices']['sadhak_monthly'] ?? 3.99 ); ?>" style="width:80px"></label>
+                    &nbsp;&nbsp;&nbsp;
+                    <label>GBP £&nbsp;<input type="number" step="0.01" min="0" name="sas_settings[gbp_prices][sadhak_monthly]"
+                        value="<?php echo esc_attr( $settings['gbp_prices']['sadhak_monthly'] ?? 3.49 ); ?>" style="width:80px"></label>
+                </td>
+            </tr>
+            <tr>
+                <th><label><?php esc_html_e( 'Sadhak Annual', 'sanathan-astro' ); ?></label></th>
+                <td>
+                    <label>USD $&nbsp;<input type="number" step="0.01" min="0" name="sas_settings[usd_prices][sadhak_annual]"
+                        value="<?php echo esc_attr( $settings['usd_prices']['sadhak_annual'] ?? 39.99 ); ?>" style="width:80px"></label>
+                    &nbsp;&nbsp;&nbsp;
+                    <label>GBP £&nbsp;<input type="number" step="0.01" min="0" name="sas_settings[gbp_prices][sadhak_annual]"
+                        value="<?php echo esc_attr( $settings['gbp_prices']['sadhak_annual'] ?? 34.99 ); ?>" style="width:80px"></label>
+                </td>
+            </tr>
+            <tr>
+                <th><label><?php esc_html_e( 'Guru Monthly', 'sanathan-astro' ); ?></label></th>
+                <td>
+                    <label>USD $&nbsp;<input type="number" step="0.01" min="0" name="sas_settings[usd_prices][guru_monthly]"
+                        value="<?php echo esc_attr( $settings['usd_prices']['guru_monthly'] ?? 7.99 ); ?>" style="width:80px"></label>
+                    &nbsp;&nbsp;&nbsp;
+                    <label>GBP £&nbsp;<input type="number" step="0.01" min="0" name="sas_settings[gbp_prices][guru_monthly]"
+                        value="<?php echo esc_attr( $settings['gbp_prices']['guru_monthly'] ?? 6.99 ); ?>" style="width:80px"></label>
+                </td>
+            </tr>
+            <tr>
+                <th><label><?php esc_html_e( 'Guru Annual', 'sanathan-astro' ); ?></label></th>
+                <td>
+                    <label>USD $&nbsp;<input type="number" step="0.01" min="0" name="sas_settings[usd_prices][guru_annual]"
+                        value="<?php echo esc_attr( $settings['usd_prices']['guru_annual'] ?? 79.99 ); ?>" style="width:80px"></label>
+                    &nbsp;&nbsp;&nbsp;
+                    <label>GBP £&nbsp;<input type="number" step="0.01" min="0" name="sas_settings[gbp_prices][guru_annual]"
+                        value="<?php echo esc_attr( $settings['gbp_prices']['guru_annual'] ?? 69.99 ); ?>" style="width:80px"></label>
+                </td>
+            </tr>
+        </table>
+
         <!-- ── Firebase FCM ───────────────────────────────────────────────── -->
         <h2>🔔 <?php esc_html_e( 'Push Notifications — Firebase FCM (Phase 3)', 'sanathan-astro' ); ?></h2>
         <table class="form-table">

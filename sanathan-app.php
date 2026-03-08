@@ -3,7 +3,7 @@
  * Plugin Name:       Sanathan Astro Services
  * Plugin URI:        https://sanathan.app
  * Description:       Cached Predictions, Kundali storage, Personal Guruji AI (Qdrant RAG), and FCM push notifications for the Sanathan Astrology platform. Powers the Flutter mobile app via REST API.
- * Version:           1.5.1
+ * Version:           1.5.2
  * Author:            Sanathan App
  * Author URI:        https://sanathan.app
  * License:           GPL-2.0+
@@ -16,7 +16,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-define( 'SAS_VERSION',     '1.5.1' );
+define( 'SAS_VERSION',     '1.5.2' );
 define( 'SAS_PLUGIN_DIR',  plugin_dir_path( __FILE__ ) );
 define( 'SAS_PLUGIN_URL',  plugin_dir_url( __FILE__ ) );
 define( 'SAS_PLUGIN_FILE', __FILE__ );
@@ -139,6 +139,20 @@ function sas_get_settings(): array {
 
         // Prediction language caching
         'enabled_languages' => SAS_SUPPORTED_LANGS,
+
+        // International pricing (USD / GBP) — INR always read from PMPro
+        'usd_prices' => [
+            'sadhak_monthly' => 3.99,
+            'sadhak_annual'  => 39.99,
+            'guru_monthly'   => 7.99,
+            'guru_annual'    => 79.99,
+        ],
+        'gbp_prices' => [
+            'sadhak_monthly' => 3.49,
+            'sadhak_annual'  => 34.99,
+            'guru_monthly'   => 6.99,
+            'guru_annual'    => 69.99,
+        ],
     ];
 
     $saved = get_option( 'sas_settings', [] );

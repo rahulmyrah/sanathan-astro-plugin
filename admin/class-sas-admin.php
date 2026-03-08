@@ -129,6 +129,16 @@ class SAS_Admin {
             $clean['enabled_languages'] = [ 'en' ];
         }
 
+        // ── International Pricing ────────────────────────────────────────────
+        $price_plans = [ 'sadhak_monthly', 'sadhak_annual', 'guru_monthly', 'guru_annual' ];
+        foreach ( [ 'usd_prices', 'gbp_prices' ] as $currency_key ) {
+            $clean[ $currency_key ] = [];
+            foreach ( $price_plans as $plan ) {
+                $raw = $input[ $currency_key ][ $plan ] ?? null;
+                $clean[ $currency_key ][ $plan ] = round( (float) $raw, 2 );
+            }
+        }
+
         return $clean;
     }
 
