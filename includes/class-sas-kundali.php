@@ -222,6 +222,139 @@ class SAS_Kundali {
         return $rows ?: [];
     }
 
+    // ── Birth Profile API (v1.5.0) ─────────────────────────────────────────────
+
+    /**
+     * Get the structured birth profile for a user (used by REST API + shortcode).
+     *
+     * Returns zodiac (Sun sign), moon sign, and ascendant extracted from core_data.
+     * Also returns edit count from user meta (no DB column needed).
+     *
+     * @param int $user_id
+     * @return array {
+     *   exists, name, dob, tob, location_name, lat, lon, tz,
+     *   zodiac, moon_sign, ascendant,
+     *   edits_used, free_edits_remaining
+     * }
+     */
+    public static function get_birth_profile( int $user_id ): array {
+        $row        = self::find( $user_id, 'en' );
+        $edits_used = (int) get_user_meta( $user_id, 'sas_birth_edits', true );
+
+        if ( ! $row ) {
+            return [
+                'exists'               => false,
+                'edits_used'           => $edits_used,
+                'free_edits_remaining' => max( 0, 1 - $edits_used ),
+            ];
+        }
+
+        $core_data = json_decode( $row['core_data'] ?? '{}', true ) ?: [];
+
+        return [
+            'exists'               => true,
+            'name'                 => $row['name'],
+            'dob'                  => $row['dob'],
+            'tob'                  => $row['tob'],
+            'location_name'        => $row['location_name'],
+            'lat'                  => (float) $row['lat'],
+            'lon'                  => (float) $row['lon'],
+            'tz'                   => (float) $row['tz'],
+            'zodiac'               => self::extract_planet_sign( $core_data, 'Sun' ),
+            'moon_sign'            => self::extract_planet_sign( $core_data, 'Moon' ),
+            'ascendant'            => self::extract_planet_sign( $core_data, 'Ascendant' ),
+            'edits_used'           => $edits_used,
+            'free_edits_remaining' => max( 0, 1 - $edits_used ),
+        ];
+    }
+
+    /**
+     * Update the user's birth profile (edit flow — max 1 free edit).
+     *
+     * Deletes all existing Kundali records for the user, re-creates them via API,
+     * then increments the sas_birth_edits user meta counter.
+     *
+     * @param int    $user_id
+     * @param array  $params   { name, dob, tob, lat, lon, tz, location_name }
+     * @param string $error    Populated on failure: 'upgrade_required' | API error message
+     * @return bool  true on success, false on failure
+     */
+    public static function update_birth_profile( int $user_id, array $params, string &$error ): bool {
+        global $wpdb;
+
+        $edits_used = (int) get_user_meta( $user_id, 'sas_birth_edits', true );
+        if ( $edits_used >= 1 ) {
+            $error = 'upgrade_required';
+            return false;
+        }
+
+        // Delete all existing Kundali records for this user
+        $wpdb->delete(
+            $wpdb->prefix . 'sanathan_kundali',
+            [ 'user_id' => $user_id ],
+            [ '%d' ]
+        );
+
+        // Re-create the English record (always required for Guruji AI)
+        $birth_en = array_merge( $params, [ 'lang' => 'en' ] );
+        $result   = self::get_or_create( $user_id, $birth_en );
+
+        if ( $result['status'] === 'error' ) {
+            $error = $result['message'];
+            return false;
+        }
+
+        // If user has a Guruji preferred language, also create that record
+        $guruji_table = $wpdb->prefix . 'sanathan_guruji_profiles';
+        $user_lang    = $wpdb->get_var(
+            $wpdb->prepare(
+                "SELECT reply_language FROM `{$guruji_table}` WHERE user_id = %d LIMIT 1",
+                $user_id
+            )
+        );
+
+        if ( $user_lang && $user_lang !== 'en' ) {
+            $birth_lang = array_merge( $params, [ 'lang' => $user_lang ] );
+            self::get_or_create( $user_id, $birth_lang );
+        }
+
+        // Increment the free-edit counter
+        update_user_meta( $user_id, 'sas_birth_edits', $edits_used + 1 );
+
+        return true;
+    }
+
+    /**
+     * Extract a planet's sign from the core_data array.
+     * Public so SAS_Guruji can reuse it when building system prompts.
+     *
+     * @param array  $core_data  Decoded core_data JSON from sanathan_kundali table
+     * @param string $planet     "Sun", "Moon", or "Ascendant"
+     * @return string  Sign name (e.g. "Leo") or empty string if not found
+     */
+    public static function extract_planet_sign( array $core_data, string $planet ): string {
+        $planets = $core_data['planet_details']['response']['planets'] ?? [];
+
+        if ( empty( $planets ) ) {
+            return '';
+        }
+
+        // Ascendant may appear under several names in the API response
+        $search = strtolower( $planet );
+        $aliases = ( $search === 'ascendant' )
+            ? [ 'ascendant', 'lagna', 'asc', 'rising' ]
+            : [ $search ];
+
+        foreach ( $planets as $p ) {
+            $pname = strtolower( $p['name'] ?? '' );
+            if ( in_array( $pname, $aliases, true ) ) {
+                return (string) ( $p['sign'] ?? '' );
+            }
+        }
+
+        return '';
+    }
+
     // ── Private helpers ────────────────────────────────────────────────────────
 
     /** Find a Kundali row for a user + language. */

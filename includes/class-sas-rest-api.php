@@ -79,6 +79,37 @@ class SAS_Rest_Api {
             ],
         ] );
 
+        // ── Birth Profile (v1.5.0) ─────────────────────────────────────────
+        register_rest_route( self::NAMESPACE, '/kundali/birth-profile', [
+            [
+                'methods'             => WP_REST_Server::READABLE,
+                'callback'            => [ __CLASS__, 'get_birth_profile' ],
+                'permission_callback' => [ __CLASS__, 'require_logged_in' ],
+            ],
+            [
+                'methods'             => WP_REST_Server::EDITABLE, // PUT
+                'callback'            => [ __CLASS__, 'update_birth_profile' ],
+                'permission_callback' => [ __CLASS__, 'require_logged_in' ],
+                'args'                => self::birth_profile_args(),
+            ],
+        ] );
+
+        // ── Location search (public — used by web form autocomplete + Flutter) ──
+        register_rest_route( self::NAMESPACE, '/util/location-search', [
+            'methods'             => WP_REST_Server::READABLE,
+            'callback'            => [ __CLASS__, 'location_search' ],
+            'permission_callback' => '__return_true',
+            'args'                => [
+                'q' => [
+                    'required'          => true,
+                    'sanitize_callback' => 'sanitize_text_field',
+                    'validate_callback' => function( $v ) {
+                        return is_string( $v ) && strlen( trim( $v ) ) >= 3;
+                    },
+                ],
+            ],
+        ] );
+
         // ── User tier ──────────────────────────────────────────────────────────
         register_rest_route( self::NAMESPACE, '/user/tier', [
             'methods'             => WP_REST_Server::READABLE,
@@ -247,6 +278,75 @@ class SAS_Rest_Api {
 
         $code = $result['status'] === 'ok' ? 200 : 403;
         return new WP_REST_Response( $result, $code );
+    }
+
+    // ── Birth Profile (v1.5.0) ─────────────────────────────────────────────────
+
+    /**
+     * GET /kundali/birth-profile
+     * Returns the user's stored birth details plus zodiac, moon sign, ascendant.
+     */
+    public static function get_birth_profile( WP_REST_Request $req ): WP_REST_Response {
+        $user_id = get_current_user_id();
+        $profile = SAS_Kundali::get_birth_profile( $user_id );
+        return new WP_REST_Response( $profile, 200 );
+    }
+
+    /**
+     * PUT /kundali/birth-profile
+     * Update birth details (max 1 free edit; upgrade_required 403 after that).
+     */
+    public static function update_birth_profile( WP_REST_Request $req ): WP_REST_Response {
+        $user_id = get_current_user_id();
+
+        $params = [
+            'name'          => $req->get_param( 'name' )          ?? '',
+            'dob'           => $req->get_param( 'dob' ),
+            'tob'           => $req->get_param( 'tob' ),
+            'lat'           => (float) $req->get_param( 'lat' ),
+            'lon'           => (float) $req->get_param( 'lon' ),
+            'tz'            => (float) $req->get_param( 'tz' ),
+            'location_name' => $req->get_param( 'location_name' ) ?? '',
+        ];
+
+        $error  = '';
+        $result = SAS_Kundali::update_birth_profile( $user_id, $params, $error );
+
+        if ( ! $result ) {
+            if ( $error === 'upgrade_required' ) {
+                return new WP_REST_Response( [
+                    'code'        => 'upgrade_required',
+                    'message'     => 'You have used your free edit. Upgrade to Premium to change birth details again.',
+                    'upgrade_url' => home_url( '/membership-upgrade/' ),
+                ], 403 );
+            }
+            return new WP_REST_Response( [
+                'code'    => 'update_failed',
+                'message' => $error ?: 'Failed to update birth profile. Please try again.',
+            ], 400 );
+        }
+
+        // Return the updated profile on success
+        $profile = SAS_Kundali::get_birth_profile( $user_id );
+        return new WP_REST_Response( $profile, 200 );
+    }
+
+    /**
+     * GET /util/location-search?q=Mumbai
+     * Proxy to VedicAstro geo-search. Returns [{name,lat,lon,tz}].
+     */
+    public static function location_search( WP_REST_Request $req ): WP_REST_Response {
+        $q      = trim( $req->get_param( 'q' ) );
+        $client = new SAS_Api_Client();
+        $loc    = $client->geo_search( $q );
+
+        // geo_search returns a single result; wrap in array for consistency
+        $results = [];
+        if ( ! empty( $loc['name'] ) ) {
+            $results[] = $loc;
+        }
+
+        return new WP_REST_Response( $results, 200 );
     }
 
     // ── User tier ──────────────────────────────────────────────────────────────
@@ -598,6 +698,19 @@ class SAS_Rest_Api {
             'tz'            => [ 'required' => true,  'sanitize_callback' => 'floatval' ],
             'location_name' => [ 'default' => '',  'sanitize_callback' => 'sanitize_text_field' ],
             'lang'          => [ 'default' => 'en', 'sanitize_callback' => 'sanitize_text_field' ],
+        ];
+    }
+
+    /** Birth profile PUT endpoint argument definitions */
+    private static function birth_profile_args(): array {
+        return [
+            'name'          => [ 'default' => '', 'sanitize_callback' => 'sanitize_text_field' ],
+            'dob'           => [ 'required' => true, 'sanitize_callback' => 'sanitize_text_field' ],
+            'tob'           => [ 'required' => true, 'sanitize_callback' => 'sanitize_text_field' ],
+            'lat'           => [ 'required' => true, 'sanitize_callback' => 'floatval' ],
+            'lon'           => [ 'required' => true, 'sanitize_callback' => 'floatval' ],
+            'tz'            => [ 'required' => true, 'sanitize_callback' => 'floatval' ],
+            'location_name' => [ 'default' => '', 'sanitize_callback' => 'sanitize_text_field' ],
         ];
     }
 

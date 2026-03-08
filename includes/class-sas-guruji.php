@@ -328,6 +328,8 @@ GURUJI RULES:
 
     /**
      * Extract Kundali summary for injection into the system prompt.
+     * v1.5.0: prepends a structured Birth Profile header with Zodiac, Moon Sign, Ascendant.
+     * If no Kundali exists, injects a gentle nudge to complete the birth profile.
      */
     private static function build_kundali_context( int $user_id ): string {
         global $wpdb;
@@ -343,7 +345,11 @@ GURUJI RULES:
         );
 
         if ( ! $row || empty( $row['core_data'] ) ) {
-            return "KUNDALI: Not yet generated. Provide general spiritual guidance until the user creates their birth chart.";
+            $kundali_url = home_url( '/kundali/' );
+            return "IMPORTANT: This user has NOT completed their birth profile yet.\n" .
+                   "Gently encourage them to visit {$kundali_url} to enter their birth details " .
+                   "so you can give truly personalised Vedic guidance.\n" .
+                   "Do NOT make up specific planetary readings without their Kundali.";
         }
 
         $core = json_decode( $row['core_data'], true );
@@ -351,30 +357,40 @@ GURUJI RULES:
             return "KUNDALI: Data unavailable.";
         }
 
-        // Extract key planet details
-        $planets = $core['planet_details']['response']['planets'] ?? [];
+        // ── Structured Birth Profile header (v1.5.0) ───────────────────────
+        $name      = $row['name']          ?? 'the user';
+        $dob       = $row['dob']           ?? 'Unknown';
+        $tob       = $row['tob']           ?? 'Unknown';
+        $loc       = $row['location_name'] ?? 'Unknown';
+        $zodiac    = SAS_Kundali::extract_planet_sign( $core, 'Sun' );
+        $moon_sign = SAS_Kundali::extract_planet_sign( $core, 'Moon' );
+        $ascendant = SAS_Kundali::extract_planet_sign( $core, 'Ascendant' );
+
+        $context  = "\xE2\x94\x81\xE2\x94\x81\xE2\x94\x81 USER BIRTH PROFILE \xE2\x94\x81\xE2\x94\x81\xE2\x94\x81\n";
+        $context .= "Name       : {$name}\n";
+        $context .= "Born       : {$dob} at {$tob} \xe2\x80\x94 {$loc}\n";
+        if ( $zodiac )    { $context .= "\xe2\x98\x80\xef\xb8\x8f Zodiac    : {$zodiac}\n"; }
+        if ( $moon_sign ) { $context .= "\xF0\x9F\x8C\x99 Moon Sign : {$moon_sign}\n"; }
+        if ( $ascendant ) { $context .= "\xe2\xac\x86\xef\xb8\x8f Ascendant : {$ascendant}\n"; }
+        $context .= "\xE2\x94\x81\xE2\x94\x81\xE2\x94\x81\xE2\x94\x81\xE2\x94\x81\xE2\x94\x81\xE2\x94\x81\xE2\x94\x81\xE2\x94\x81\xE2\x94\x81\xE2\x94\x81\xE2\x94\x81\xE2\x94\x81\xE2\x94\x81\xE2\x94\x81\xE2\x94\x81\xE2\x94\x81\xE2\x94\x81\xE2\x94\x81\xE2\x94\x81\xE2\x94\x81\xE2\x94\x81\xE2\x94\x81\n";
+
+        // ── Planetary positions ─────────────────────────────────────────────
+        $planets      = $core['planet_details']['response']['planets'] ?? [];
         $planet_lines = [];
         foreach ( $planets as $planet ) {
             if ( isset( $planet['name'], $planet['sign'] ) ) {
-                $planet_lines[] = "  - {$planet['name']}: {$planet['sign']}" .
+                $planet_lines[] = "  {$planet['name']}: {$planet['sign']}" .
                     ( isset( $planet['house'] ) ? " (House {$planet['house']})" : '' );
             }
         }
 
-        $dob = $row['dob'] ?? 'Unknown';
-        $tob = $row['tob'] ?? 'Unknown';
-        $loc = $row['location_name'] ?? 'Unknown';
-
-        $context = "KUNDALI (Birth Chart):
-  Born: {$dob} at {$tob}, Location: {$loc}";
-
         if ( ! empty( $planet_lines ) ) {
-            $context .= "\n  Planetary Positions:\n" . implode( "\n", $planet_lines );
+            $context .= "\nPLANETARY POSITIONS:\n" . implode( "\n", $planet_lines );
         }
 
-        // Add dosha info if available (full tier)
+        // ── Dosha info if available (full tier) ─────────────────────────────
         if ( ! empty( $row['full_data'] ) ) {
-            $full = json_decode( $row['full_data'], true );
+            $full   = json_decode( $row['full_data'], true );
             $doshas = [];
             if ( ! empty( $full['mangal']['response']['is_manglik'] ) ) {
                 $doshas[] = 'Mangal Dosh';
@@ -383,7 +399,7 @@ GURUJI RULES:
                 $doshas[] = 'Kaal Sarp Dosh';
             }
             if ( ! empty( $doshas ) ) {
-                $context .= "\n  Active Doshas: " . implode( ', ', $doshas );
+                $context .= "\nActive Doshas: " . implode( ', ', $doshas );
             }
         }
 

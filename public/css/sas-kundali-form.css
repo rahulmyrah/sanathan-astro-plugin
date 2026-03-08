@@ -1,0 +1,450 @@
+/* =========================================================
+   Kundali Birth Profile Form  —  sas-kundali-form.css
+   v1.5.0  |  Sanathan Astro Services
+   ========================================================= */
+
+/* ── Wrapper ────────────────────────────────────────────── */
+.sas-kf-wrap {
+    max-width: 660px;
+    margin: 0 auto;
+    padding: 16px;
+    font-family: inherit;
+}
+
+/* ── Card ───────────────────────────────────────────────── */
+.sas-kf-card {
+    background: #fff;
+    border-radius: 20px;
+    box-shadow: 0 4px 24px rgba(0,0,0,.08);
+    overflow: hidden;
+}
+
+.sas-kf-card--center {
+    text-align: center;
+    padding: 48px 32px;
+}
+
+.sas-kf-guest-icon {
+    font-size: 3rem;
+    margin-bottom: 12px;
+}
+
+/* ── Typography ─────────────────────────────────────────── */
+.sas-kf-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #1a1a1a;
+    margin: 0 0 8px;
+    padding: 28px 28px 0;
+}
+
+.sas-kf-card--center .sas-kf-title {
+    padding: 0;
+}
+
+.sas-kf-subtitle {
+    color: #6b7280;
+    font-size: 0.95rem;
+    margin: 0 0 24px;
+    line-height: 1.6;
+}
+
+/* ── Amber warning box ──────────────────────────────────── */
+.sas-kf-warning {
+    margin: 20px 28px 24px;
+    padding: 16px 18px;
+    background: #fffbeb;
+    border-left: 4px solid #f59e0b;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    color: #78350f;
+    line-height: 1.6;
+}
+
+/* ── Form layout ────────────────────────────────────────── */
+#sas-kf-form {
+    padding: 0 28px 28px;
+}
+
+.sas-kf-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 18px;
+}
+
+.sas-kf-field-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+.sas-kf-field label {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #374151;
+}
+
+.sas-kf-required {
+    color: #ef4444;
+    margin-left: 2px;
+}
+
+.sas-kf-field input[type="text"],
+.sas-kf-field input[type="date"],
+.sas-kf-field input[type="time"] {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1.5px solid #e5e7eb;
+    border-radius: 10px;
+    font-size: 0.95rem;
+    color: #1a1a1a;
+    background: #fafafa;
+    transition: border-color .2s, box-shadow .2s;
+    box-sizing: border-box;
+    min-height: 48px;
+}
+
+.sas-kf-field input:focus {
+    outline: none;
+    border-color: #ff6b35;
+    box-shadow: 0 0 0 3px rgba(255,107,53,.12);
+    background: #fff;
+}
+
+.sas-kf-field input:disabled {
+    background: #f3f4f6;
+    color: #9ca3af;
+    cursor: not-allowed;
+}
+
+/* ── "Don't know time" checkbox ─────────────────────────── */
+.sas-kf-checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.82rem;
+    color: #6b7280;
+    font-weight: 400 !important;
+    cursor: pointer;
+    margin-top: 4px;
+}
+
+.sas-kf-checkbox-label input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: #ff6b35;
+    cursor: pointer;
+    min-height: unset;
+    padding: 0;
+    border: none;
+}
+
+/* ── Location autocomplete ──────────────────────────────── */
+.sas-kf-location-wrapper {
+    position: relative;
+}
+
+.sas-kf-location-dropdown {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    background: #fff;
+    border: 1.5px solid #e5e7eb;
+    border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(0,0,0,.12);
+    z-index: 100;
+    max-height: 220px;
+    overflow-y: auto;
+}
+
+.sas-kf-dropdown-item {
+    padding: 12px 16px;
+    font-size: 0.9rem;
+    color: #374151;
+    cursor: pointer;
+    border-bottom: 1px solid #f3f4f6;
+    transition: background .15s;
+}
+
+.sas-kf-dropdown-item:last-child {
+    border-bottom: none;
+}
+
+.sas-kf-dropdown-item:hover,
+.sas-kf-dropdown-item:focus {
+    background: #fff7ed;
+    color: #ff6b35;
+}
+
+/* ── Buttons ─────────────────────────────────────────────── */
+.sas-kf-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 13px 24px;
+    border-radius: 10px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    border: none;
+    transition: opacity .2s, transform .1s;
+    min-height: 48px;
+}
+
+.sas-kf-btn:hover {
+    opacity: .92;
+    transform: translateY(-1px);
+}
+
+.sas-kf-btn:disabled {
+    opacity: .6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.sas-kf-btn--primary {
+    background: linear-gradient(135deg, #ff6b35 0%, #e8501e 100%);
+    color: #fff;
+    box-shadow: 0 4px 14px rgba(255,107,53,.35);
+}
+
+.sas-kf-btn--upgrade {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    color: #fff;
+    box-shadow: 0 4px 14px rgba(245,158,11,.35);
+}
+
+.sas-kf-btn--ghost {
+    background: transparent;
+    color: #6b7280;
+    border: 1.5px solid #e5e7eb;
+}
+
+.sas-kf-btn--full {
+    width: 100%;
+    margin-top: 8px;
+}
+
+/* ── Status message ─────────────────────────────────────── */
+.sas-kf-msg {
+    display: none;
+    margin-top: 14px;
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    line-height: 1.5;
+}
+
+.sas-kf-msg--error {
+    background: #fef2f2;
+    color: #991b1b;
+    border-left: 3px solid #ef4444;
+}
+
+.sas-kf-msg--success {
+    background: #f0fdf4;
+    color: #166534;
+    border-left: 3px solid #22c55e;
+}
+
+.sas-kf-msg--info {
+    background: #eff6ff;
+    color: #1e40af;
+    border-left: 3px solid #3b82f6;
+}
+
+/* ── Summary header ─────────────────────────────────────── */
+.sas-kf-summary-header {
+    background: linear-gradient(135deg, #ff6b35 0%, #c2410c 100%);
+    padding: 28px 28px 22px;
+    color: #fff;
+}
+
+.sas-kf-summary-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin-bottom: 4px;
+}
+
+.sas-kf-summary-name {
+    font-size: 1.5rem;
+    font-weight: 800;
+    opacity: .95;
+}
+
+/* ── Chips grid ─────────────────────────────────────────── */
+.sas-kf-chips {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
+    background: #f3f4f6;
+    border-top: 1px solid #f3f4f6;
+}
+
+.sas-kf-chip {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 16px 14px;
+    background: #fff;
+}
+
+.sas-kf-chip-icon {
+    font-size: 1.4rem;
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.sas-kf-chip-label {
+    font-size: 0.75rem;
+    color: #9ca3af;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    margin-bottom: 2px;
+}
+
+.sas-kf-chip-value {
+    font-size: 0.925rem;
+    font-weight: 600;
+    color: #1a1a1a;
+}
+
+/* ── Edit section ───────────────────────────────────────── */
+.sas-kf-edit-section {
+    border-top: 1px solid #f3f4f6;
+    padding: 20px 28px 28px;
+}
+
+.sas-kf-edit-toggle {
+    background: transparent;
+    border: 1.5px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 10px 18px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #374151;
+    cursor: pointer;
+    transition: border-color .2s, color .2s;
+}
+
+.sas-kf-edit-toggle:hover {
+    border-color: #ff6b35;
+    color: #ff6b35;
+}
+
+.sas-kf-edit-panel {
+    margin-top: 20px;
+}
+
+.sas-kf-edit-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-bottom: 18px;
+}
+
+.sas-kf-edit-badge--ok {
+    background: #f0fdf4;
+    color: #166534;
+    border: 1px solid #bbf7d0;
+}
+
+.sas-kf-edit-badge--locked {
+    background: #fef2f2;
+    color: #991b1b;
+    border: 1px solid #fecaca;
+}
+
+.sas-kf-upgrade-text {
+    color: #6b7280;
+    font-size: 0.9rem;
+    line-height: 1.6;
+    margin-bottom: 16px;
+}
+
+/* ── Upgrade modal ──────────────────────────────────────── */
+.sas-kf-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.5);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+}
+
+.sas-kf-modal {
+    background: #fff;
+    border-radius: 16px;
+    padding: 32px;
+    max-width: 420px;
+    width: 100%;
+    box-shadow: 0 20px 60px rgba(0,0,0,.25);
+    text-align: center;
+}
+
+.sas-kf-modal h3 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin-bottom: 12px;
+    color: #1a1a1a;
+}
+
+.sas-kf-modal p {
+    color: #6b7280;
+    font-size: 0.9rem;
+    line-height: 1.6;
+    margin-bottom: 24px;
+}
+
+.sas-kf-modal-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+/* ── Mobile responsive ──────────────────────────────────── */
+@media (max-width: 540px) {
+    .sas-kf-wrap {
+        padding: 8px;
+    }
+
+    .sas-kf-field-row {
+        grid-template-columns: 1fr;
+    }
+
+    .sas-kf-chips {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .sas-kf-title {
+        font-size: 1.25rem;
+        padding: 20px 20px 0;
+    }
+
+    .sas-kf-warning {
+        margin: 16px 20px 20px;
+    }
+
+    #sas-kf-form {
+        padding: 0 20px 20px;
+    }
+
+    .sas-kf-summary-header {
+        padding: 20px;
+    }
+
+    .sas-kf-edit-section {
+        padding: 16px 20px 20px;
+    }
+}
