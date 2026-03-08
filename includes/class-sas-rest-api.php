@@ -352,18 +352,24 @@ class SAS_Rest_Api {
     // ── User tier ──────────────────────────────────────────────────────────────
 
     public static function get_user_tier( WP_REST_Request $req ): WP_REST_Response {
-        $user_id  = get_current_user_id();
-        $kundalis = SAS_Kundali::get_all_for_user( $user_id );
+        $user_id = get_current_user_id();
 
-        // Determine highest tier across all stored Kundalis
-        $tier = SAS_TIER_FREE;
-        foreach ( $kundalis as $k ) {
-            if ( $k['tier'] === SAS_TIER_FULL ) {
-                $tier = SAS_TIER_FULL;
-                break;
-            }
-            if ( $k['tier'] === SAS_TIER_CORE ) {
-                $tier = SAS_TIER_CORE;
+        // Prefer PMPro membership level (SAS_Membership handles graceful fallback)
+        $tier = class_exists( 'SAS_Membership' )
+            ? SAS_Membership::get_user_tier( $user_id )
+            : SAS_TIER_FREE;
+
+        // Legacy fallback: also check kundali table tier if PMPro says free
+        if ( $tier === SAS_TIER_FREE ) {
+            $kundalis = SAS_Kundali::get_all_for_user( $user_id );
+            foreach ( $kundalis as $k ) {
+                if ( $k['tier'] === SAS_TIER_FULL ) {
+                    $tier = SAS_TIER_FULL;
+                    break;
+                }
+                if ( $k['tier'] === SAS_TIER_CORE ) {
+                    $tier = SAS_TIER_CORE;
+                }
             }
         }
 

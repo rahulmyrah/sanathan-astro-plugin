@@ -283,7 +283,11 @@ class SAS_Kundali {
         global $wpdb;
 
         $edits_used = (int) get_user_meta( $user_id, 'sas_birth_edits', true );
-        if ( $edits_used >= 1 ) {
+
+        // Paid members (Core/Full via PMPro) get unlimited edits — free tier gets 1
+        $has_paid = class_exists( 'SAS_Membership' ) && SAS_Membership::has_core( $user_id );
+
+        if ( ! $has_paid && $edits_used >= 1 ) {
             $error = 'upgrade_required';
             return false;
         }
@@ -318,8 +322,10 @@ class SAS_Kundali {
             self::get_or_create( $user_id, $birth_lang );
         }
 
-        // Increment the free-edit counter
-        update_user_meta( $user_id, 'sas_birth_edits', $edits_used + 1 );
+        // Only increment the free-edit counter for free-tier users
+        if ( ! $has_paid ) {
+            update_user_meta( $user_id, 'sas_birth_edits', $edits_used + 1 );
+        }
 
         return true;
     }

@@ -3,7 +3,7 @@
  * Plugin Name:       Sanathan Astro Services
  * Plugin URI:        https://sanathan.app
  * Description:       Cached Predictions, Kundali storage, Personal Guruji AI (Qdrant RAG), and FCM push notifications for the Sanathan Astrology platform. Powers the Flutter mobile app via REST API.
- * Version:           1.5.0
+ * Version:           1.5.1
  * Author:            Sanathan App
  * Author URI:        https://sanathan.app
  * License:           GPL-2.0+
@@ -16,7 +16,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-define( 'SAS_VERSION',     '1.5.0' );
+define( 'SAS_VERSION',     '1.5.1' );
 define( 'SAS_PLUGIN_DIR',  plugin_dir_path( __FILE__ ) );
 define( 'SAS_PLUGIN_URL',  plugin_dir_url( __FILE__ ) );
 define( 'SAS_PLUGIN_FILE', __FILE__ );
@@ -58,6 +58,7 @@ require_once SAS_PLUGIN_DIR . 'includes/class-sas-updater.php';
 require_once SAS_PLUGIN_DIR . 'includes/class-sas-ai-tools-frontend.php';
 require_once SAS_PLUGIN_DIR . 'includes/class-sas-home.php';
 require_once SAS_PLUGIN_DIR . 'includes/class-sas-kundali-form.php';
+require_once SAS_PLUGIN_DIR . 'includes/class-sas-membership.php';
 
 if ( is_admin() ) {
     require_once SAS_PLUGIN_DIR . 'admin/class-sas-admin.php';
@@ -92,6 +93,9 @@ function sas_boot() {
 
     // Kundali birth profile form shortcode ([sas_kundali_form])
     SAS_Kundali_Form::init();
+
+    // Membership: PMPro tier integration + pricing table shortcode ([sas_pricing_table])
+    SAS_Membership::init();
 
     // ── GitHub auto-updater ───────────────────────────────────────────────────
     // Fetches plugin-info.json from GitHub main branch (repo root).
