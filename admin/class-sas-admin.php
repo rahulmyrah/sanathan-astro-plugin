@@ -40,6 +40,14 @@ class SAS_Admin {
         add_action( 'wp_ajax_sas_update_existing_ai_tools',[ __CLASS__, 'handle_update_existing_ai_tools' ] );
         add_action( 'wp_ajax_sas_generate_ai_tool_images', [ __CLASS__, 'handle_generate_ai_tool_images' ] );
         add_action( 'wp_ajax_sas_cleanup_ai_tool_titles',  [ __CLASS__, 'handle_cleanup_ai_tool_titles' ] );
+
+        // AJAX: Content Engine (Hindu Calendar / Pooja Guides / Slokas)
+        add_action( 'wp_ajax_sas_setup_content_categories',      [ __CLASS__, 'handle_setup_content_categories' ] );
+        add_action( 'wp_ajax_sas_generate_calendar_post',         [ __CLASS__, 'handle_generate_calendar_post' ] );
+        add_action( 'wp_ajax_sas_generate_pooja_post',            [ __CLASS__, 'handle_generate_pooja_post' ] );
+        add_action( 'wp_ajax_sas_generate_sloka_post',            [ __CLASS__, 'handle_generate_sloka_post' ] );
+        add_action( 'wp_ajax_sas_generate_content_images_batch',  [ __CLASS__, 'handle_generate_content_images_batch' ] );
+        add_action( 'wp_ajax_sas_get_content_counts',             [ __CLASS__, 'handle_get_content_counts' ] );
     }
 
     // ── Menu ──────────────────────────────────────────────────────────────────
@@ -62,7 +70,8 @@ class SAS_Admin {
         add_submenu_page( 'sas-dashboard', __( 'Kundali', 'sanathan-astro' ),      __( 'Kundali', 'sanathan-astro' ),      'manage_options', 'sas-kundali',      [ __CLASS__, 'page_kundali' ] );
         add_submenu_page( 'sas-dashboard', __( 'Settings', 'sanathan-astro' ),      __( 'Settings', 'sanathan-astro' ),      'manage_options', 'sas-settings',     [ __CLASS__, 'page_settings' ] );
         add_submenu_page( 'sas-dashboard', __( 'Knowledge Base', 'sanathan-astro' ), __( 'Knowledge Base', 'sanathan-astro' ), 'manage_options', 'sas-knowledge',    [ __CLASS__, 'page_knowledge' ] );
-        add_submenu_page( 'sas-dashboard', __( 'AI Tools Setup', 'sanathan-astro' ), __( 'AI Tools Setup', 'sanathan-astro' ), 'manage_options', 'sas-ai-tools-setup', [ __CLASS__, 'page_ai_tools_setup' ] );
+        add_submenu_page( 'sas-dashboard', __( 'AI Tools Setup', 'sanathan-astro' ),  __( 'AI Tools Setup', 'sanathan-astro' ),  'manage_options', 'sas-ai-tools-setup',   [ __CLASS__, 'page_ai_tools_setup' ] );
+        add_submenu_page( 'sas-dashboard', __( 'Content Engine', 'sanathan-astro' ), __( 'Content Engine', 'sanathan-astro' ), 'manage_options', 'sas-content-engine', [ __CLASS__, 'page_content_engine' ] );
     }
 
     // ── Pages ─────────────────────────────────────────────────────────────────
@@ -89,6 +98,10 @@ class SAS_Admin {
 
     public static function page_ai_tools_setup(): void {
         require_once SAS_PLUGIN_DIR . 'admin/partials/ai-tools-setup.php';
+    }
+
+    public static function page_content_engine(): void {
+        require_once SAS_PLUGIN_DIR . 'admin/partials/content-engine.php';
     }
 
     // ── Settings registration ─────────────────────────────────────────────────
@@ -792,5 +805,141 @@ class SAS_Admin {
         );
 
         // jQuery is always available in WP admin — no need to enqueue separately.
+    }
+
+    // ── Content Engine AJAX handlers ──────────────────────────────────────────
+
+    /**
+     * Shared nonce + permission check for all Content Engine AJAX calls.
+     * Returns false and sends JSON error if check fails.
+     */
+    private static function content_engine_check(): bool {
+        if ( ! check_ajax_referer( 'sas_content_engine', 'nonce', false ) ) {
+            wp_send_json_error( [ 'message' => 'Invalid nonce.' ] );
+            return false;
+        }
+        if ( ! current_user_can( 'manage_options' ) ) {
+            wp_send_json_error( [ 'message' => 'Permission denied.' ] );
+            return false;
+        }
+        set_time_limit( 120 );
+        return true;
+    }
+
+    public static function handle_setup_content_categories(): void {
+        if ( ! self::content_engine_check() ) return;
+        $result = SAS_Content_Engine::setup_categories();
+        wp_send_json_success( $result );
+    }
+
+    public static function handle_generate_calendar_post(): void {
+        if ( ! self::content_engine_check() ) return;
+
+        $year    = (int) ( $_POST['year']    ?? 2026 );
+        $month   = sanitize_text_field( $_POST['month']   ?? '' );
+        $country = sanitize_text_field( $_POST['country'] ?? '' );
+        $lang    = sanitize_text_field( $_POST['lang']    ?? 'en' );
+
+        if ( ! $month || ! $country || ! $lang ) {
+            wp_send_json_error( [ 'message' => 'Missing required parameters.' ] );
+            return;
+        }
+
+        $result = SAS_Content_Engine::generate_calendar_post( $year, $month, $country, $lang );
+
+        if ( isset( $result['status'] ) && $result['status'] === 'error' ) {
+            wp_send_json_error( $result );
+        } else {
+            wp_send_json_success( $result );
+        }
+    }
+
+    public static function handle_generate_pooja_post(): void {
+        if ( ! self::content_engine_check() ) return;
+
+        $pooja = sanitize_text_field( $_POST['pooja'] ?? '' );
+        $lang  = sanitize_text_field( $_POST['lang']  ?? 'en' );
+
+        if ( ! $pooja || ! $lang ) {
+            wp_send_json_error( [ 'message' => 'Missing required parameters.' ] );
+            return;
+        }
+
+        $result = SAS_Content_Engine::generate_pooja_post( $pooja, $lang );
+
+        if ( isset( $result['status'] ) && $result['status'] === 'error' ) {
+            wp_send_json_error( $result );
+        } else {
+            wp_send_json_success( $result );
+        }
+    }
+
+    public static function handle_generate_sloka_post(): void {
+        if ( ! self::content_engine_check() ) return;
+
+        $deity = sanitize_text_field( $_POST['deity'] ?? '' );
+        $lang  = sanitize_text_field( $_POST['lang']  ?? 'en' );
+
+        if ( ! $deity || ! $lang ) {
+            wp_send_json_error( [ 'message' => 'Missing required parameters.' ] );
+            return;
+        }
+
+        $result = SAS_Content_Engine::generate_sloka_post( $deity, $lang );
+
+        if ( isset( $result['status'] ) && $result['status'] === 'error' ) {
+            wp_send_json_error( $result );
+        } else {
+            wp_send_json_success( $result );
+        }
+    }
+
+    public static function handle_generate_content_images_batch(): void {
+        if ( ! self::content_engine_check() ) return;
+
+        $type = sanitize_text_field( $_POST['type'] ?? '' );
+        if ( ! in_array( $type, [ SAS_Content_Engine::TYPE_CALENDAR, SAS_Content_Engine::TYPE_POOJA, SAS_Content_Engine::TYPE_SLOKA ], true ) ) {
+            wp_send_json_error( [ 'message' => 'Invalid content type.' ] );
+            return;
+        }
+
+        set_time_limit( 600 );
+
+        $posts = get_posts( [
+            'post_type'      => 'post',
+            'posts_per_page' => -1,
+            'fields'         => 'ids',
+            'meta_query'     => [
+                [
+                    'key'   => 'sas_content_type',
+                    'value' => $type,
+                ],
+                [
+                    'key'     => '_thumbnail_id',
+                    'compare' => 'NOT EXISTS',
+                ],
+            ],
+        ] );
+
+        $generated = 0;
+        $errors    = 0;
+
+        foreach ( $posts as $post_id ) {
+            $subject = get_the_title( $post_id );
+            $ok = SAS_Content_Engine::generate_image_for_post( (int) $post_id, $type, $subject );
+            $ok ? $generated++ : $errors++;
+            usleep( 600000 ); // 0.6s rate limit between Imagen calls
+        }
+
+        wp_send_json_success( [
+            'generated' => $generated,
+            'errors'    => $errors,
+            'total'     => count( $posts ),
+        ] );
+    }
+
+    public static function handle_get_content_counts(): void {
+        if ( ! self::content_engine_check() ) return;
+        wp_send_json_success( SAS_Content_Engine::get_counts() );
     }
 }
