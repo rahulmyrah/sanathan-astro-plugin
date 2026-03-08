@@ -46,7 +46,7 @@ class SAS_Home {
 	/* ─────────────────────────────────────────
 	 * DIRECTORIST CATEGORY TITLE FIX
 	 * Replaces the generic "Single Category" page title with the real
-	 * Directorist category term name when browsing /single-category*/…/
+	 * Directorist category term name when browsing /single-category.../slug/
 	 * ───────────────────────────────────────── */
 
 	/**
