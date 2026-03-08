@@ -58,7 +58,7 @@ class SAS_Home {
 	private static function get_directorist_category_name_from_url() {
 		$uri = isset( $_SERVER['REQUEST_URI'] ) ? $_SERVER['REQUEST_URI'] : '';
 		// Matches /single-category[…]/some-slug/ (any variant of the page slug)
-		if ( preg_match( '#/single-category[^/]*/([^/?#\s]+)#i', $uri, $m ) ) {
+		if ( preg_match( '~/single-category[^/]*/([^/?\s]+)~i', $uri, $m ) ) {
 			$cat_slug = sanitize_title( $m[1] );
 			$term     = get_term_by( 'slug', $cat_slug, 'at_biz_dir-category' );
 			if ( $term && ! is_wp_error( $term ) ) {
