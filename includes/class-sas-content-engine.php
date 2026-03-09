@@ -244,25 +244,38 @@ class SAS_Content_Engine {
     // ── Post generators ───────────────────────────────────────────────────
 
     /**
-     * Generate a single Hindu Calendar post.
+     * Generate a complete Hindu Calendar book for a full year (all 12 months)
+     * as a single post with a 13-page flipbook (PHP cover + 12 Gemini-generated monthly pages).
+     *
+     * Uses ONE Gemini call to generate all 12 months, keeping requests well within rate limits.
+     * Slug: hindu-calendar-{year}-{country_slug}-{lang}
      */
-    public static function generate_calendar_post( int $year, string $month, string $country, string $lang ): array {
-        $lang_name = self::LANG_NAMES[ $lang ] ?? 'English';
-        $timezone  = self::COUNTRIES[ $country ] ?? 'UTC';
+    public static function generate_calendar_book( string $country, string $lang, int $year = 2026 ): array {
+        $lang_name    = self::LANG_NAMES[ $lang ] ?? 'English';
+        $timezone     = self::COUNTRIES[ $country ] ?? 'UTC';
         $country_slug = sanitize_title( $country );
-        $month_slug   = sanitize_title( $month );
-        $slug = "hindu-calendar-{$year}-{$month_slug}-{$country_slug}-{$lang}";
+        $slug         = "hindu-calendar-{$year}-{$country_slug}-{$lang}";
 
         if ( self::post_exists( $slug ) ) {
             return [ 'status' => 'skipped', 'slug' => $slug ];
         }
 
-        $title   = "Hindu Calendar {$year} — {$month} | {$country} | " . $lang_name;
-        $content = self::gemini_text( self::calendar_prompt( $year, $month, $country, $timezone, $lang_name ) );
+        $title          = "Hindu Calendar {$year} | {$country} | " . $lang_name;
+        $months_content = self::gemini_text( self::calendar_book_prompt( $year, $country, $timezone, $lang_name ) );
 
-        if ( ! $content ) {
+        if ( ! $months_content ) {
             return [ 'status' => 'error', 'error' => 'Gemini returned empty content.' ];
         }
+
+        // PHP-generated book cover (no extra Gemini call needed)
+        $cover = '<div class="sas-flip-page sas-page-cover">'
+               . '<h1>&#x1F549;&#xFE0F; Hindu Calendar ' . esc_html( $year ) . '</h1>'
+               . '<h2>' . esc_html( $country ) . '</h2>'
+               . '<p class="sas-cover-lang">' . esc_html( $lang_name ) . ' &bull; ' . esc_html( $timezone ) . '</p>'
+               . '<p class="sas-cover-tagline">Festivals &bull; Ekadashi &bull; Purnima &bull; Muhurat &bull; Slokas</p>'
+               . '</div>' . "\n";
+
+        $content = $cover . $months_content;
 
         // Category: Hindu Calendar {Country}
         $cat_name = "Hindu Calendar {$country}";
@@ -274,13 +287,12 @@ class SAS_Content_Engine {
             'post_content' => $content,
             'post_name'    => $slug,
             'categories'   => $cats,
-            'tags'         => [ (string) $year, $month, $country, $lang_name, 'Hindu Calendar', 'Panchang' ],
+            'tags'         => [ (string) $year, $country, $lang_name, 'Hindu Calendar', 'Panchang', 'Hindu Festivals', 'Hindu Calendar ' . $year ],
             'meta'         => [
                 'sas_content_type' => self::TYPE_CALENDAR,
                 'sas_language'     => $lang,
                 'sas_country'      => $country,
                 'sas_year'         => (string) $year,
-                'sas_month'        => $month,
             ],
         ] );
 
@@ -508,42 +520,42 @@ class SAS_Content_Engine {
 
     // ── Prompt templates ──────────────────────────────────────────────────
 
-    private static function calendar_prompt( int $year, string $month, string $country, string $timezone, string $lang_name ): string {
+    /**
+     * Prompt that generates a complete 12-month Hindu Calendar in a single Gemini call.
+     * Returns 12 <div class="sas-flip-page"> blocks (one per month).
+     * A PHP-generated cover page is prepended in generate_calendar_book().
+     */
+    private static function calendar_book_prompt( int $year, string $country, string $timezone, string $lang_name ): string {
         return <<<PROMPT
-Write a comprehensive Hindu calendar guide for {$month} {$year} for Hindu devotees in {$country} ({$timezone} timezone).
-ALL explanatory content should be in {$lang_name} language. Keep Sanskrit festival names in their original form but explain them in {$lang_name}.
+Generate a complete Hindu Calendar for {$year} for Hindu devotees in {$country} ({$timezone} timezone).
+Write ALL explanatory text in {$lang_name}. Keep Sanskrit festival names, deity names, and mantra text in their original form.
 
-Structure the response as ONLY pure HTML using these exact div sections (no markdown, no code fences, no DOCTYPE):
+Output ONLY pure HTML — exactly 12 <div class="sas-flip-page"> blocks, one per calendar month from January through December {$year}.
+No markdown, no code fences, no DOCTYPE, no extra wrapper divs.
 
-<div class="sas-flip-page sas-page-cover">
-<h1>{$month} {$year} Hindu Calendar — {$country}</h1>
-<p>[Month overview in {$lang_name}: spiritual theme, which deities are honoured, seasonal significance for Hindu families in {$country}. 3 sentences.]</p>
-</div>
+Use this EXACT structure for EACH of the 12 months:
 
 <div class="sas-flip-page">
-<h2>Major Festivals &amp; Celebrations</h2>
-[List each major festival this month as <div class="sas-festival-item"><h3>Festival Name</h3><p><strong>Date:</strong> [date adjusted for {$timezone}]</p><p>[2-sentence description in {$lang_name}. Traditional practices. Why it's celebrated.]</p></div>]
+<h2>[Month Name] {$year} — {$country}</h2>
+<div class="sas-festival-item">
+<h3>&#127881; Festivals &amp; Vrats</h3>
+<ul>[Each festival/vrat as <li><strong>[Festival name]</strong> — [Date in {$timezone}] — [1 sentence significance in {$lang_name}]</li>. Include all major Hindu festivals, Ekadashi vrats, Jayantis, and regional observances important for Hindus in {$country}.]</ul>
+</div>
+<div class="sas-festival-item">
+<h3>&#127765; Lunar Dates</h3>
+<p><strong>Purnima (Full Moon):</strong> [Date &amp; name in {$lang_name}]</p>
+<p><strong>Amavasya (New Moon):</strong> [Date &amp; brief significance in {$lang_name}]</p>
+<p><strong>Ekadashi:</strong> [Shukla Ekadashi — Date, Name] &amp; [Krishna Ekadashi — Date, Name]</p>
+</div>
+<div class="sas-festival-item">
+<h3>&#10024; Shubh Muhurat</h3>
+<p>[2-3 sentences about auspicious days this month for marriages, griha pravesh, new ventures, travel — adjusted for Hindu families in {$country}. In {$lang_name}.]</p>
+</div>
+<blockquote class="sas-mantra">[Key Sanskrit mantra or sloka in Devanagari for the main festival/deity of this month]</blockquote>
+<p class="sas-mantra-meaning">[{$lang_name}: meaning and benefit of chanting this mantra]</p>
 </div>
 
-<div class="sas-flip-page">
-<h2>Ekadashi, Purnima &amp; Amavasya</h2>
-[For each: date in {$timezone}, name, significance in {$lang_name}, recommended fast/pooja. Format as a structured list.]
-</div>
-
-<div class="sas-flip-page">
-<h2>Auspicious Days &amp; Muhurat</h2>
-<p>[Explain auspicious days this month for weddings, griha pravesh, new ventures, travel — for families in {$country}. In {$lang_name}.]</p>
-</div>
-
-<div class="sas-flip-page">
-<h2>Monthly Sloka &amp; Blessing</h2>
-<blockquote class="sas-mantra">[Most relevant Sanskrit sloka for this month's main festival — in Devanagari]</blockquote>
-<p class="sas-transliteration">[IAST transliteration]</p>
-<p class="sas-mantra-meaning">[{$lang_name} translation and meaning]</p>
-<p>[Who to recite to, best time of day, number of repetitions. In {$lang_name}.]</p>
-</div>
-
-Return ONLY the 5 div blocks above. No extra wrapper tags. No markdown.
+Output all 12 months in sequence (January through December). Total output = exactly 12 div blocks. No other text.
 PROMPT;
     }
 
@@ -717,19 +729,12 @@ PROMPT;
 
     public static function get_all_calendar_items( int $year = 2026 ): array {
         $items = [];
-        foreach ( self::MONTHS as $month ) {
-            foreach ( array_keys( self::COUNTRIES ) as $country ) {
-                foreach ( array_keys( self::LANG_NAMES ) as $lang ) {
-                    $items[] = [
-                        'year'    => $year,
-                        'month'   => $month,
-                        'country' => $country,
-                        'lang'    => $lang,
-                    ];
-                }
+        foreach ( array_keys( self::COUNTRIES ) as $country ) {
+            foreach ( array_keys( self::LANG_NAMES ) as $lang ) {
+                $items[] = [ 'year' => $year, 'country' => $country, 'lang' => $lang ];
             }
         }
-        return $items; // 324 items
+        return $items; // 27 items (3 countries × 9 languages) — each item = a full 12-month book
     }
 
     public static function get_all_pooja_items(): array {

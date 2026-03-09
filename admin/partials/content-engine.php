@@ -29,9 +29,9 @@ $months    = SAS_Content_Engine::MONTHS;
     <!-- ── Status Cards ──────────────────────────────────────────────── -->
     <div class="sas-status-row">
         <div class="sas-stat-card">
-            <div class="sas-stat-num" id="stat-calendar"><?php echo esc_html( $counts['calendar'] ); ?>/324</div>
-            <div class="sas-stat-label">Hindu Calendar Posts</div>
-            <div class="sas-mini-bar"><div class="sas-mini-fill" style="width:<?php echo min( 100, round( $counts['calendar'] / 324 * 100 ) ); ?>%"></div></div>
+            <div class="sas-stat-num" id="stat-calendar"><?php echo esc_html( $counts['calendar'] ); ?>/27</div>
+            <div class="sas-stat-label">Hindu Calendar Books</div>
+            <div class="sas-mini-bar"><div class="sas-mini-fill" style="width:<?php echo min( 100, round( $counts['calendar'] / 27 * 100 ) ); ?>%"></div></div>
         </div>
         <div class="sas-stat-card">
             <div class="sas-stat-num" id="stat-pooja"><?php echo esc_html( $counts['pooja'] ); ?>/180</div>
@@ -44,9 +44,9 @@ $months    = SAS_Content_Engine::MONTHS;
             <div class="sas-mini-bar"><div class="sas-mini-fill" style="width:<?php echo min( 100, round( $counts['sloka'] / 90 * 100 ) ); ?>%"></div></div>
         </div>
         <div class="sas-stat-card">
-            <div class="sas-stat-num" id="stat-total"><?php echo esc_html( $counts['calendar'] + $counts['pooja'] + $counts['sloka'] ); ?>/594</div>
+            <div class="sas-stat-num" id="stat-total"><?php echo esc_html( $counts['calendar'] + $counts['pooja'] + $counts['sloka'] ); ?>/297</div>
             <div class="sas-stat-label">Total Posts Generated</div>
-            <div class="sas-mini-bar"><div class="sas-mini-fill" style="width:<?php echo min( 100, round( ( $counts['calendar'] + $counts['pooja'] + $counts['sloka'] ) / 594 * 100 ) ); ?>%"></div></div>
+            <div class="sas-mini-bar"><div class="sas-mini-fill" style="width:<?php echo min( 100, round( ( $counts['calendar'] + $counts['pooja'] + $counts['sloka'] ) / 297 * 100 ) ); ?>%"></div></div>
         </div>
     </div>
 
@@ -67,8 +67,8 @@ $months    = SAS_Content_Engine::MONTHS;
 
     <!-- ─────────────────────── TAB 1: Hindu Calendar ─────────────── -->
     <div class="sas-tab-panel" id="tab-calendar">
-        <h2>&#128197; Generate Hindu Calendar Posts</h2>
-        <p>Generates monthly Hindu calendar entries with festivals, Ekadashi/Purnima/Amavasya dates, auspicious muhurats, and slokas — tailored to each country's timezone.</p>
+        <h2>&#128197; Generate Hindu Calendar Books</h2>
+        <p>Generates <strong>complete year flipbooks</strong> — one book per country &times; language (27 total). Each book has a cover page + 12 monthly pages with festivals, Ekadashi/Purnima/Amavasya dates, auspicious muhurats, and slokas. All 12 months are generated in a single Gemini call per book.</p>
 
         <table class="form-table sas-gen-form">
             <tr>
@@ -106,7 +106,7 @@ $months    = SAS_Content_Engine::MONTHS;
         </table>
 
         <div style="margin-bottom:1rem">
-            <button id="btn-gen-calendar" class="button button-primary <?php echo ! $api_key ? 'disabled' : ''; ?>">&#9889; Generate Calendar Posts</button>
+            <button id="btn-gen-calendar" class="button button-primary <?php echo ! $api_key ? 'disabled' : ''; ?>">&#9889; Generate Calendar Books</button>
             <button id="btn-gen-cal-images" class="button button-secondary <?php echo ! $api_key ? 'disabled' : ''; ?>">&#127748; Generate Featured Images</button>
         </div>
 
@@ -283,7 +283,7 @@ jQuery(function ($) {
             const pct = Math.round(done / total * 100);
             progressFill.css('width', pct + '%');
             statusEl.text(`${done}/${total} — ✅ Created: ${created}  ⏭ Skipped: ${skipped}  ❌ Errors: ${errors}`);
-            await sleep(600); // 600ms between calls → ~100 RPM, well within Gemini limits
+            await sleep(2000); // 2s between calls — calendar books are large single calls; pooja/sloka also benefit
         }
 
         resultEl.html(`<span class="sas-ok">✅ Done! Created: <strong>${created}</strong>  Skipped: <strong>${skipped}</strong>  Errors: <strong>${errors}</strong> out of ${total} items.</span>`);
@@ -316,21 +316,20 @@ jQuery(function ($) {
             return;
         }
 
-        const months = <?php echo json_encode( SAS_Content_Engine::MONTHS ); ?>;
-        const items  = [];
-        for (const month of months) {
-            for (const country of countries) {
-                for (const lang of langs) {
-                    items.push({ year, month, country, lang });
-                }
+        // 27 items max (3 countries × 9 langs) — each item = one full-year flipbook (13 pages)
+        const items = [];
+        for (const country of countries) {
+            for (const lang of langs) {
+                items.push({ year, country, lang });
             }
         }
 
         $(this).prop('disabled', true).text('Generating...');
         $('#cal-progress-wrap').show();
+        // 3s delay between books — each Gemini call generates 12 months, needs a bit of breathing room
         await runBatch(items, 'sas_generate_calendar_post',
             $('#cal-progress-fill'), $('#cal-status'), $('#cal-result'));
-        $(this).prop('disabled', false).text('⚡ Generate Calendar Posts');
+        $(this).prop('disabled', false).text('⚡ Generate Calendar Books');
         updateStats();
     });
 
@@ -408,10 +407,10 @@ jQuery(function ($) {
         const res = await ajaxPost('sas_get_content_counts', {});
         if (!res.success) return;
         const d = res.data;
-        $('#stat-calendar').text(d.calendar + '/324');
+        $('#stat-calendar').text(d.calendar + '/27');
         $('#stat-pooja').text(d.pooja + '/180');
         $('#stat-sloka').text(d.sloka + '/90');
-        $('#stat-total').text((d.calendar + d.pooja + d.sloka) + '/594');
+        $('#stat-total').text((d.calendar + d.pooja + d.sloka) + '/297');
     }
 
 });

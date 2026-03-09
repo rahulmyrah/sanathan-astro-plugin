@@ -836,16 +836,17 @@ class SAS_Admin {
         if ( ! self::content_engine_check() ) return;
 
         $year    = (int) ( $_POST['year']    ?? 2026 );
-        $month   = sanitize_text_field( $_POST['month']   ?? '' );
         $country = sanitize_text_field( $_POST['country'] ?? '' );
         $lang    = sanitize_text_field( $_POST['lang']    ?? 'en' );
 
-        if ( ! $month || ! $country || ! $lang ) {
+        if ( ! $country || ! $lang ) {
             wp_send_json_error( [ 'message' => 'Missing required parameters.' ] );
             return;
         }
 
-        $result = SAS_Content_Engine::generate_calendar_post( $year, $month, $country, $lang );
+        // Each book = one Gemini call generating all 12 months — allow up to 5 minutes
+        set_time_limit( 300 );
+        $result = SAS_Content_Engine::generate_calendar_book( $country, $lang, $year );
 
         if ( isset( $result['status'] ) && $result['status'] === 'error' ) {
             wp_send_json_error( $result );
