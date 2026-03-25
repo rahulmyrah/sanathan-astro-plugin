@@ -113,6 +113,7 @@ class SAS_Home {
 	public static function enqueue_assets(): void {
 		// ── Guruji Float: load on ALL frontend pages ────────────────────────
 		if ( ! is_admin() ) {
+			$config = self::get_frontend_config(); // compute once, reuse below
 			wp_enqueue_style(
 				'sas-guruji-float',
 				SAS_PLUGIN_URL . 'public/css/sas-guruji-float.css',
@@ -127,7 +128,7 @@ class SAS_Home {
 				true
 			);
 			// Inject shared config for all pages
-			wp_localize_script( 'sas-guruji-float', 'sasConfig', self::get_frontend_config() );
+			wp_localize_script( 'sas-guruji-float', 'sasConfig', $config );
 		}
 
 		// ── Home page only: dashboard CSS/JS ───────────────────────────────
@@ -155,7 +156,22 @@ class SAS_Home {
 			true
 		);
 		// Override config on the homepage (dashboard JS needs it too)
-		wp_localize_script( 'sas-dashboard', 'sasConfig', self::get_frontend_config() );
+		wp_localize_script( 'sas-dashboard', 'sasConfig', $config );
+		// Kundali form assets: must be explicitly loaded here because the form is
+		// embedded via do_shortcode() from PHP — has_shortcode() won't detect it
+		wp_enqueue_style(
+			'sas-kundali-form',
+			SAS_PLUGIN_URL . 'public/css/sas-kundali-form.css',
+			[],
+			SAS_VERSION
+		);
+		wp_enqueue_script(
+			'sas-kundali-form',
+			SAS_PLUGIN_URL . 'public/js/sas-kundali-form.js',
+			[],
+			SAS_VERSION,
+			true
+		);
 	}
 
 	/**
