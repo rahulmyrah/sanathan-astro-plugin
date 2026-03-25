@@ -223,7 +223,7 @@
 			}
 		} else {
 			// Load history only on first open
-			if (!historyLoaded && elMessages.children.length === 0) {
+			if (!historyLoaded) {
 				loadHistoryAndGreet();
 			}
 		}

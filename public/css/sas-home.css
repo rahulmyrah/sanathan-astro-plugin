@@ -803,3 +803,542 @@
 .elementor-widget-shortcode .sas-home-section {
 	margin: 0;
 }
+
+/* ════════════════════════════════════════════
+   DASHBOARD SECTION
+════════════════════════════════════════════ */
+.sas-dashboard-section {
+	background: var(--sas-bg);
+	padding: 80px 0;
+}
+
+.sas-dashboard-header {
+	display: flex;
+	flex-direction: row;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: 28px;
+}
+
+.sas-dashboard-header h2 {
+	font-size: clamp(1.4rem, 3vw, 2rem);
+	font-weight: 800;
+	color: var(--sas-dark);
+	margin: 0;
+}
+
+.sas-today-date {
+	font-size: 0.88rem;
+	color: var(--sas-text-muted);
+	background: var(--sas-card);
+	border: 1px solid var(--sas-border);
+	padding: 6px 14px;
+	border-radius: 50px;
+}
+
+/* ════════════════════════════════════════════
+   TAB NAVIGATION
+════════════════════════════════════════════ */
+.sas-dash-tabs {
+	display: flex;
+	gap: 4px;
+	border-bottom: 2px solid var(--sas-border);
+	margin-bottom: 28px;
+	overflow-x: auto;
+	scrollbar-width: none;
+}
+
+.sas-dash-tabs::-webkit-scrollbar {
+	display: none;
+}
+
+.sas-dash-tab {
+	background: transparent;
+	border: none;
+	cursor: pointer;
+	padding: 12px 20px;
+	font-size: 0.9rem;
+	font-weight: 600;
+	color: var(--sas-text-muted);
+	border-bottom: 3px solid transparent;
+	margin-bottom: -2px;
+	transition: var(--sas-transition);
+	white-space: nowrap;
+	border-radius: var(--sas-radius-sm) var(--sas-radius-sm) 0 0;
+}
+
+.sas-dash-tab:hover {
+	color: var(--sas-primary);
+	background: rgba(232, 137, 26, 0.05);
+}
+
+.sas-dash-tab.active {
+	color: var(--sas-primary);
+	border-bottom-color: var(--sas-primary);
+	background: rgba(232, 137, 26, 0.05);
+}
+
+/* ════════════════════════════════════════════
+   TAB PANELS
+════════════════════════════════════════════ */
+.sas-dash-panel {
+	display: none;
+}
+
+.sas-dash-panel.active {
+	display: block;
+	animation: sas-fade-in 0.2s ease;
+}
+
+@keyframes sas-fade-in {
+	from { opacity: 0; transform: translateY(8px); }
+	to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ════════════════════════════════════════════
+   LOADING / ERROR STATES
+════════════════════════════════════════════ */
+.sas-dash-loading {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	min-height: 120px;
+	color: var(--sas-text-muted);
+	font-size: 0.9rem;
+}
+
+.sas-dash-error {
+	text-align: center;
+	padding: 32px;
+	color: #ef4444;
+	font-size: 0.9rem;
+	background: rgba(239, 68, 68, 0.05);
+	border-radius: var(--sas-radius);
+	border: 1px solid rgba(239, 68, 68, 0.15);
+}
+
+/* ════════════════════════════════════════════
+   PANCHANG GRID
+════════════════════════════════════════════ */
+.sas-panchang-grid {
+	display: grid;
+	grid-template-columns: repeat(5, 1fr);
+	gap: 12px;
+	margin-bottom: 16px;
+}
+
+.sas-panchang-chip {
+	background: var(--sas-card);
+	border: 1px solid var(--sas-border);
+	border-radius: var(--sas-radius);
+	padding: 16px 12px;
+	text-align: center;
+	transition: var(--sas-transition);
+}
+
+.sas-panchang-chip:hover {
+	border-color: var(--sas-primary);
+	box-shadow: var(--sas-shadow-hover);
+}
+
+.sas-panchang-chip-icon {
+	font-size: 1.6rem;
+	margin-bottom: 8px;
+}
+
+.sas-panchang-chip-label {
+	font-size: 0.7rem;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.06em;
+	color: var(--sas-text-muted);
+	margin: 0 0 4px;
+	display: block;
+}
+
+.sas-panchang-chip-value {
+	font-size: 0.92rem;
+	font-weight: 700;
+	color: var(--sas-dark);
+	margin: 0;
+	word-break: break-word;
+}
+
+/* ════════════════════════════════════════════
+   FESTIVALS LIST
+════════════════════════════════════════════ */
+.sas-festivals-list {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+}
+
+.sas-festival-item {
+	display: flex;
+	align-items: center;
+	gap: 14px;
+	background: var(--sas-card);
+	border: 1px solid var(--sas-border);
+	border-radius: var(--sas-radius);
+	padding: 14px 18px;
+	transition: var(--sas-transition);
+}
+
+.sas-festival-item:hover {
+	border-color: var(--sas-primary);
+	transform: translateX(4px);
+}
+
+.sas-festival-icon {
+	font-size: 1.5rem;
+	flex-shrink: 0;
+}
+
+.sas-festival-info {
+	flex: 1;
+}
+
+.sas-festival-name {
+	font-size: 0.95rem;
+	font-weight: 700;
+	color: var(--sas-dark);
+	margin: 0 0 4px;
+}
+
+.sas-festival-type-badge {
+	display: inline-block;
+	font-size: 0.72rem;
+	font-weight: 600;
+	padding: 2px 10px;
+	border-radius: 50px;
+	background: rgba(232, 137, 26, 0.10);
+	color: var(--sas-primary);
+}
+
+.sas-festivals-empty {
+	text-align: center;
+	padding: 40px;
+	color: var(--sas-text-muted);
+	font-size: 0.9rem;
+}
+
+/* ════════════════════════════════════════════
+   MUHURAT (GOOD TIMES) LIST
+════════════════════════════════════════════ */
+.sas-muhurat-section-title {
+	font-size: 0.8rem;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.08em;
+	color: var(--sas-text-muted);
+	margin: 0 0 12px;
+	padding-bottom: 6px;
+	border-bottom: 1px solid var(--sas-border);
+}
+
+.sas-muhurat-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+	gap: 10px;
+	margin-bottom: 24px;
+}
+
+.sas-muhurat-slot {
+	background: var(--sas-card);
+	border: 1px solid var(--sas-border);
+	border-radius: var(--sas-radius-sm);
+	border-left: 4px solid var(--sas-border);
+	padding: 12px 14px;
+	transition: var(--sas-transition);
+}
+
+.sas-muhurat-slot:hover {
+	box-shadow: var(--sas-shadow);
+}
+
+.sas-muhurat-slot.auspicious {
+	border-left-color: #22c55e;
+}
+
+.sas-muhurat-slot.inauspicious {
+	border-left-color: #ef4444;
+}
+
+.sas-muhurat-slot-name {
+	font-size: 0.88rem;
+	font-weight: 700;
+	color: var(--sas-dark);
+	margin: 0 0 4px;
+}
+
+.sas-muhurat-slot-time {
+	font-size: 0.78rem;
+	color: var(--sas-text-muted);
+	margin: 0;
+}
+
+.sas-muhurat-slot-badge {
+	display: inline-block;
+	font-size: 0.68rem;
+	font-weight: 600;
+	padding: 2px 8px;
+	border-radius: 50px;
+	margin-top: 4px;
+}
+
+.sas-muhurat-slot.auspicious .sas-muhurat-slot-badge {
+	background: rgba(34, 197, 94, 0.12);
+	color: #16a34a;
+}
+
+.sas-muhurat-slot.inauspicious .sas-muhurat-slot-badge {
+	background: rgba(239, 68, 68, 0.10);
+	color: #dc2626;
+}
+
+/* ════════════════════════════════════════════
+   ZODIAC CONTROLS
+════════════════════════════════════════════ */
+.sas-zodiac-controls {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 12px;
+	margin-bottom: 20px;
+}
+
+.sas-zodiac-select,
+.sas-lang-select {
+	background: var(--sas-card);
+	border: 1px solid var(--sas-border);
+	border-radius: var(--sas-radius-sm);
+	padding: 8px 14px;
+	font-size: 0.88rem;
+	color: var(--sas-dark);
+	cursor: pointer;
+	transition: var(--sas-transition);
+}
+
+.sas-zodiac-select:focus,
+.sas-lang-select:focus {
+	outline: none;
+	border-color: var(--sas-primary);
+	box-shadow: 0 0 0 3px rgba(232, 137, 26, 0.12);
+}
+
+.sas-cycle-tabs {
+	display: flex;
+	gap: 4px;
+	background: rgba(0, 0, 0, 0.04);
+	border-radius: var(--sas-radius-sm);
+	padding: 3px;
+}
+
+.sas-cycle-tab {
+	background: transparent;
+	border: none;
+	cursor: pointer;
+	padding: 6px 14px;
+	font-size: 0.82rem;
+	font-weight: 600;
+	color: var(--sas-text-muted);
+	border-radius: 6px;
+	transition: var(--sas-transition);
+}
+
+.sas-cycle-tab.active {
+	background: var(--sas-card);
+	color: var(--sas-primary);
+	box-shadow: 0 1px 4px rgba(0, 0, 0, 0.10);
+}
+
+.sas-cycle-tab:hover {
+	color: var(--sas-primary);
+}
+
+/* ════════════════════════════════════════════
+   ZODIAC RESULT
+════════════════════════════════════════════ */
+.sas-zodiac-result {
+	background: var(--sas-card);
+	border: 1px solid var(--sas-border);
+	border-radius: var(--sas-radius);
+	padding: 24px 28px;
+	min-height: 120px;
+	line-height: 1.75;
+	color: var(--sas-text);
+}
+
+.sas-zodiac-result p {
+	margin: 0 0 12px;
+}
+
+.sas-zodiac-result p:last-child {
+	margin-bottom: 0;
+}
+
+.sas-zodiac-sign-header {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	margin-bottom: 16px;
+	padding-bottom: 12px;
+	border-bottom: 1px solid var(--sas-border);
+}
+
+.sas-zodiac-sign-icon {
+	font-size: 2rem;
+}
+
+.sas-zodiac-sign-name {
+	font-size: 1.1rem;
+	font-weight: 800;
+	color: var(--sas-dark);
+	margin: 0;
+}
+
+/* ════════════════════════════════════════════
+   KUNDALI PANEL
+════════════════════════════════════════════ */
+.sas-kundali-panel {
+	margin-top: 32px;
+	padding-top: 28px;
+	border-top: 2px solid var(--sas-border);
+}
+
+.sas-kundali-panel-title {
+	font-size: 1rem;
+	font-weight: 800;
+	color: var(--sas-dark);
+	margin: 0 0 16px;
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.sas-kundali-highlights {
+	display: grid;
+	grid-template-columns: repeat(3, 1fr);
+	gap: 16px;
+	margin-bottom: 16px;
+}
+
+.sas-kundali-highlight-chip {
+	background: linear-gradient(135deg, var(--sas-card), var(--sas-bg));
+	border: 1px solid var(--sas-border);
+	border-radius: var(--sas-radius);
+	padding: 18px 16px;
+	text-align: center;
+}
+
+.sas-khl-label {
+	font-size: 0.7rem;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.06em;
+	color: var(--sas-text-muted);
+	display: block;
+	margin-bottom: 6px;
+}
+
+.sas-khl-value {
+	font-size: 1rem;
+	font-weight: 800;
+	color: var(--sas-dark);
+	text-transform: capitalize;
+}
+
+.sas-khl-icon {
+	font-size: 1.4rem;
+	display: block;
+	margin-bottom: 6px;
+}
+
+.sas-kundali-dasha-row {
+	background: var(--sas-card);
+	border: 1px solid var(--sas-border);
+	border-radius: var(--sas-radius-sm);
+	padding: 12px 16px;
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	margin-bottom: 12px;
+}
+
+.sas-kundali-dasha-label {
+	font-size: 0.78rem;
+	font-weight: 600;
+	color: var(--sas-text-muted);
+	white-space: nowrap;
+}
+
+.sas-kundali-dasha-value {
+	font-size: 0.92rem;
+	font-weight: 700;
+	color: var(--sas-dark);
+}
+
+.sas-kundali-view-link {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	color: var(--sas-primary);
+	font-weight: 700;
+	font-size: 0.88rem;
+	text-decoration: none;
+	transition: var(--sas-transition);
+}
+
+.sas-kundali-view-link:hover {
+	color: var(--sas-primary-dark);
+	gap: 10px;
+}
+
+/* ════════════════════════════════════════════
+   GUEST CTA BLOCK (INSIDE DASHBOARD)
+════════════════════════════════════════════ */
+.sas-dash-guest-cta {
+	background: linear-gradient(135deg, var(--sas-darker), #2d1b4e);
+	border-radius: var(--sas-radius);
+	padding: 28px;
+	text-align: center;
+	margin-top: 28px;
+	color: #fff;
+}
+
+.sas-dash-guest-cta p {
+	color: rgba(255, 255, 255, 0.75);
+	margin: 0 0 16px;
+	font-size: 0.95rem;
+}
+
+.sas-dash-guest-buttons {
+	display: flex;
+	justify-content: center;
+	gap: 12px;
+	flex-wrap: wrap;
+}
+
+/* ════════════════════════════════════════════
+   DASHBOARD RESPONSIVE
+════════════════════════════════════════════ */
+@media (max-width: 1024px) {
+	.sas-panchang-grid { grid-template-columns: repeat(3, 1fr); }
+}
+
+@media (max-width: 768px) {
+	.sas-dashboard-header   { flex-direction: column; align-items: flex-start; gap: 8px; }
+	.sas-dash-tab           { padding: 10px 14px; font-size: 0.82rem; }
+	.sas-panchang-grid      { grid-template-columns: repeat(2, 1fr); }
+	.sas-kundali-highlights { grid-template-columns: repeat(3, 1fr); }
+	.sas-zodiac-controls    { gap: 8px; }
+	.sas-muhurat-grid       { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 480px) {
+	.sas-panchang-grid          { grid-template-columns: repeat(2, 1fr); }
+	.sas-kundali-highlights     { grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+	.sas-kundali-highlight-chip { padding: 12px 8px; }
+	.sas-khl-value              { font-size: 0.85rem; }
+	.sas-dash-guest-buttons     { flex-direction: column; align-items: center; }
+}

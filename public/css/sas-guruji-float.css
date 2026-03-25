@@ -1,0 +1,432 @@
+/*
+ * Sanathan Guruji — Floating Chat Bubble
+ * @version 1.0.0
+ */
+
+/* ════════════════════════════════════════════
+   FLOAT CONTAINER + BUBBLE BUTTON
+════════════════════════════════════════════ */
+#sas-guruji-float {
+	position: fixed;
+	bottom: 24px;
+	right: 24px;
+	z-index: 9999;
+	font-family: inherit;
+}
+
+#sas-guruji-bubble {
+	width: 62px;
+	height: 62px;
+	border-radius: 50%;
+	background: linear-gradient(135deg, #E8891A, #C4710E);
+	border: none;
+	cursor: pointer;
+	box-shadow: 0 4px 20px rgba(232, 137, 26, 0.45);
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 2px;
+	transition: all 0.25s ease;
+	position: relative;
+}
+
+#sas-guruji-bubble:hover {
+	transform: translateY(-3px) scale(1.05);
+	box-shadow: 0 8px 28px rgba(232, 137, 26, 0.55);
+}
+
+#sas-guruji-bubble:focus {
+	outline: 3px solid rgba(232, 137, 26, 0.5);
+	outline-offset: 2px;
+}
+
+.sas-guruji-bubble-icon {
+	font-size: 1.5rem;
+	line-height: 1;
+	display: block;
+}
+
+.sas-guruji-bubble-label {
+	font-size: 0.55rem;
+	font-weight: 700;
+	color: #fff;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+	line-height: 1;
+}
+
+/* Pulse animation on idle */
+#sas-guruji-bubble::after {
+	content: '';
+	position: absolute;
+	inset: -4px;
+	border-radius: 50%;
+	border: 2px solid rgba(232, 137, 26, 0.4);
+	animation: sas-guruji-pulse 2.5s ease-in-out infinite;
+}
+
+@keyframes sas-guruji-pulse {
+	0%, 100% { opacity: 1; transform: scale(1); }
+	50%       { opacity: 0.4; transform: scale(1.12); }
+}
+
+/* Stop pulse when open */
+#sas-guruji-bubble[aria-expanded="true"]::after {
+	animation: none;
+}
+
+#sas-guruji-bubble[aria-expanded="true"] {
+	background: linear-gradient(135deg, #C4710E, #a05c08);
+}
+
+/* Avatar image (replaces emoji when profile loaded) */
+.sas-guruji-avatar-img {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	border-radius: 50%;
+}
+
+/* ════════════════════════════════════════════
+   MODAL PANEL
+════════════════════════════════════════════ */
+#sas-guruji-modal {
+	position: fixed;
+	bottom: 100px;
+	right: 24px;
+	width: 360px;
+	height: 520px;
+	background: #fff;
+	border-radius: 16px;
+	box-shadow: 0 16px 48px rgba(0, 0, 0, 0.18);
+	display: flex;
+	flex-direction: column;
+	overflow: hidden;
+	animation: sas-guruji-slide-up 0.25s ease;
+}
+
+#sas-guruji-modal[hidden] {
+	display: none;
+}
+
+@keyframes sas-guruji-slide-up {
+	from { opacity: 0; transform: translateY(16px); }
+	to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ════════════════════════════════════════════
+   MODAL HEADER
+════════════════════════════════════════════ */
+.sas-guruji-modal-header {
+	background: linear-gradient(135deg, #1a1a2e, #2d1b4e);
+	padding: 14px 16px;
+	display: flex;
+	align-items: center;
+	gap: 10px;
+}
+
+.sas-guruji-modal-avatar {
+	width: 36px;
+	height: 36px;
+	border-radius: 50%;
+	background: rgba(232, 137, 26, 0.25);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 1.2rem;
+	flex-shrink: 0;
+	overflow: hidden;
+}
+
+.sas-guruji-modal-title {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	gap: 1px;
+}
+
+.sas-guruji-modal-title > span:first-child {
+	font-size: 0.7rem;
+	color: rgba(255, 255, 255, 0.55);
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.06em;
+}
+
+.sas-guruji-modal-title > span:last-child {
+	font-size: 0.92rem;
+	color: #fff;
+	font-weight: 700;
+}
+
+.sas-guruji-online-dot {
+	width: 8px;
+	height: 8px;
+	background: #22c55e;
+	border-radius: 50%;
+	flex-shrink: 0;
+	box-shadow: 0 0 6px rgba(34, 197, 94, 0.6);
+	animation: sas-online-blink 2s ease-in-out infinite;
+}
+
+@keyframes sas-online-blink {
+	0%, 100% { opacity: 1; }
+	50%       { opacity: 0.5; }
+}
+
+#sas-guruji-close {
+	background: none;
+	border: none;
+	color: rgba(255, 255, 255, 0.6);
+	cursor: pointer;
+	font-size: 1.2rem;
+	padding: 4px 6px;
+	border-radius: 6px;
+	line-height: 1;
+	transition: 0.2s ease;
+}
+
+#sas-guruji-close:hover {
+	color: #fff;
+	background: rgba(255, 255, 255, 0.12);
+}
+
+/* ════════════════════════════════════════════
+   MESSAGES AREA
+════════════════════════════════════════════ */
+#sas-guruji-messages {
+	flex: 1;
+	overflow-y: auto;
+	padding: 16px;
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	scroll-behavior: smooth;
+	background: #fafafa;
+}
+
+/* Scrollbar styling */
+#sas-guruji-messages::-webkit-scrollbar {
+	width: 4px;
+}
+
+#sas-guruji-messages::-webkit-scrollbar-track {
+	background: transparent;
+}
+
+#sas-guruji-messages::-webkit-scrollbar-thumb {
+	background: rgba(0, 0, 0, 0.15);
+	border-radius: 2px;
+}
+
+/* ════════════════════════════════════════════
+   MESSAGE BUBBLES
+════════════════════════════════════════════ */
+.sas-guruji-msg {
+	display: flex;
+}
+
+.sas-guruji-msg-user {
+	justify-content: flex-end;
+}
+
+.sas-guruji-msg-assistant {
+	justify-content: flex-start;
+}
+
+.sas-guruji-msg-bubble {
+	max-width: 82%;
+	padding: 10px 14px;
+	border-radius: 16px;
+	font-size: 0.88rem;
+	line-height: 1.55;
+	word-break: break-word;
+}
+
+.sas-guruji-msg-user .sas-guruji-msg-bubble {
+	background: linear-gradient(135deg, #E8891A, #C4710E);
+	color: #fff;
+	border-bottom-right-radius: 4px;
+}
+
+.sas-guruji-msg-assistant .sas-guruji-msg-bubble {
+	background: #fff;
+	color: #2d2d2d;
+	border: 1px solid #e8e0d8;
+	border-bottom-left-radius: 4px;
+	box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+}
+
+/* ════════════════════════════════════════════
+   TYPING INDICATOR
+════════════════════════════════════════════ */
+.sas-guruji-typing {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+	padding: 12px 16px;
+}
+
+.sas-guruji-typing span {
+	width: 7px;
+	height: 7px;
+	background: #C4710E;
+	border-radius: 50%;
+	animation: sas-typing-bounce 1.2s ease-in-out infinite;
+}
+
+.sas-guruji-typing span:nth-child(1) { animation-delay: 0s; }
+.sas-guruji-typing span:nth-child(2) { animation-delay: 0.2s; }
+.sas-guruji-typing span:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes sas-typing-bounce {
+	0%, 80%, 100% { transform: scale(0.8); opacity: 0.5; }
+	40%           { transform: scale(1.2); opacity: 1; }
+}
+
+/* ════════════════════════════════════════════
+   INPUT ROW
+════════════════════════════════════════════ */
+.sas-guruji-input-row {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 12px 14px;
+	border-top: 1px solid #e8e0d8;
+	background: #fff;
+}
+
+.sas-guruji-input-row--hidden {
+	display: none;
+}
+
+#sas-guruji-input {
+	flex: 1;
+	border: 1px solid #e8e0d8;
+	border-radius: 22px;
+	padding: 9px 16px;
+	font-size: 0.88rem;
+	color: #2d2d2d;
+	outline: none;
+	transition: 0.2s ease;
+	background: #fafafa;
+}
+
+#sas-guruji-input:focus {
+	border-color: #E8891A;
+	background: #fff;
+	box-shadow: 0 0 0 3px rgba(232, 137, 26, 0.10);
+}
+
+#sas-guruji-input::placeholder {
+	color: #aaa;
+}
+
+#sas-guruji-send {
+	width: 36px;
+	height: 36px;
+	border-radius: 50%;
+	background: linear-gradient(135deg, #E8891A, #C4710E);
+	border: none;
+	color: #fff;
+	cursor: pointer;
+	font-size: 1rem;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	flex-shrink: 0;
+	transition: 0.2s ease;
+}
+
+#sas-guruji-send:hover {
+	transform: scale(1.1);
+	box-shadow: 0 4px 12px rgba(232, 137, 26, 0.4);
+}
+
+#sas-guruji-send:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+	transform: none;
+	box-shadow: none;
+}
+
+/* ════════════════════════════════════════════
+   GUEST PROMPT (LOGGED-OUT STATE)
+════════════════════════════════════════════ */
+.sas-guruji-guest-prompt {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	text-align: center;
+	padding: 24px 20px;
+	gap: 12px;
+}
+
+.sas-guruji-guest-icon {
+	font-size: 2.5rem;
+	margin-bottom: 4px;
+}
+
+.sas-guruji-guest-prompt p {
+	font-size: 0.88rem;
+	color: #555;
+	line-height: 1.6;
+	margin: 0;
+}
+
+.sas-guruji-login-btn {
+	display: inline-block;
+	background: linear-gradient(135deg, #E8891A, #C4710E);
+	color: #fff;
+	font-weight: 700;
+	font-size: 0.88rem;
+	text-decoration: none;
+	padding: 10px 24px;
+	border-radius: 50px;
+	transition: 0.2s ease;
+	box-shadow: 0 3px 12px rgba(232, 137, 26, 0.35);
+}
+
+.sas-guruji-login-btn:hover {
+	transform: translateY(-2px);
+	box-shadow: 0 6px 18px rgba(232, 137, 26, 0.45);
+	color: #fff;
+}
+
+.sas-guruji-register-btn {
+	display: inline-block;
+	background: transparent;
+	border: 2px solid #E8891A;
+	color: #E8891A;
+	font-weight: 700;
+	font-size: 0.88rem;
+	text-decoration: none;
+	padding: 8px 22px;
+	border-radius: 50px;
+	transition: 0.2s ease;
+}
+
+.sas-guruji-register-btn:hover {
+	background: #E8891A;
+	color: #fff;
+}
+
+/* ════════════════════════════════════════════
+   MOBILE RESPONSIVE
+════════════════════════════════════════════ */
+@media (max-width: 480px) {
+	#sas-guruji-modal {
+		bottom: 0;
+		right: 0;
+		left: 0;
+		width: 100%;
+		height: 75vh;
+		border-radius: 20px 20px 0 0;
+	}
+
+	#sas-guruji-float {
+		bottom: 16px;
+		right: 16px;
+	}
+}
