@@ -46,6 +46,7 @@ define( 'SAS_TIER_FULL', 'full' );
 
 require_once SAS_PLUGIN_DIR . 'includes/class-sas-db.php';
 require_once SAS_PLUGIN_DIR . 'includes/class-sas-api-client.php';
+require_once SAS_PLUGIN_DIR . 'includes/class-sas-panchang.php';
 require_once SAS_PLUGIN_DIR . 'includes/class-sas-predictions.php';
 require_once SAS_PLUGIN_DIR . 'includes/class-sas-kundali.php';
 require_once SAS_PLUGIN_DIR . 'includes/class-sas-cron.php';

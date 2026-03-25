@@ -48,6 +48,10 @@ class SAS_Api_Client {
         'pisces'      => 12,
     ];
 
+    const DELHI_LAT = 28.6139;
+    const DELHI_LON = 77.2090;
+    const DELHI_TZ  = 5.5;
+
     public function fetch_prediction( string $type, array $extra ): array {
         // Convert zodiac name to numeric ID — the API rejects string names
         if ( isset( $extra['zodiac'] ) && ! is_numeric( $extra['zodiac'] ) ) {
@@ -101,6 +105,52 @@ class SAS_Api_Client {
             'pitra'       => $this->get( 'dosha/pitra-dosh', $params ),
             'papasamaya'  => $this->get( 'dosha/papasamaya', $params ),
         ];
+    }
+
+    // ── Panchang & Muhurat endpoints ──────────────────────────────────────────
+
+    /**
+     * Fetch Panchang data (Tithi, Nakshatra, Yoga, Karana, Vara + festivals).
+     * Endpoint: panchang/panchang
+     *
+     * @param string $date_dmy  Date in d/m/Y format e.g. '25/03/2026'
+     * @param float  $lat       Latitude  (default: Delhi 28.6139)
+     * @param float  $lon       Longitude (default: Delhi 77.2090)
+     * @param float  $tz        Timezone offset (default: IST 5.5)
+     * @param string $lang      Language code (default: 'en')
+     * @return array Decoded API response or [] on failure.
+     */
+    public function fetch_panchang( string $date_dmy, float $lat = self::DELHI_LAT, float $lon = self::DELHI_LON, float $tz = self::DELHI_TZ, string $lang = 'en' ): array {
+        return $this->get( 'panchang/panchang', [
+            'date'    => $date_dmy,
+            'lat'     => $lat,
+            'lon'     => $lon,
+            'tz'      => $tz,
+            'lang'    => $lang,
+            'api_key' => $this->api_key,
+        ] );
+    }
+
+    /**
+     * Fetch Choghadiya muhurat (auspicious / inauspicious time slots).
+     * Endpoint: panchang/choghadiya-muhurta
+     *
+     * @param string $date_dmy  Date in d/m/Y format
+     * @param float  $lat       Latitude
+     * @param float  $lon       Longitude
+     * @param float  $tz        Timezone offset
+     * @param string $lang      Language code
+     * @return array Decoded API response or [] on failure.
+     */
+    public function fetch_choghadiya( string $date_dmy, float $lat = self::DELHI_LAT, float $lon = self::DELHI_LON, float $tz = self::DELHI_TZ, string $lang = 'en' ): array {
+        return $this->get( 'panchang/choghadiya-muhurta', [
+            'date'    => $date_dmy,
+            'lat'     => $lat,
+            'lon'     => $lon,
+            'tz'      => $tz,
+            'lang'    => $lang,
+            'api_key' => $this->api_key,
+        ] );
     }
 
     // ── Location / geo search ─────────────────────────────────────────────────

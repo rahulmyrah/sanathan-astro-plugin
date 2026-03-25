@@ -55,6 +55,32 @@ class SAS_Rest_Api {
             ],
         ] );
 
+        // ── Panchang (daily sacred almanac) ────────────────────────────────────────
+        register_rest_route( self::NAMESPACE, '/panchang', [
+            'methods'             => WP_REST_Server::READABLE,
+            'callback'            => [ __CLASS__, 'get_panchang' ],
+            'permission_callback' => '__return_true', // Public
+            'args'                => [
+                'date' => [
+                    'default'           => '',
+                    'sanitize_callback' => 'sanitize_text_field',
+                ],
+            ],
+        ] );
+
+        // ── Muhurat / Choghadiya (auspicious times) ─────────────────────────────────
+        register_rest_route( self::NAMESPACE, '/muhurat', [
+            'methods'             => WP_REST_Server::READABLE,
+            'callback'            => [ __CLASS__, 'get_muhurat' ],
+            'permission_callback' => '__return_true', // Public
+            'args'                => [
+                'date' => [
+                    'default'           => '',
+                    'sanitize_callback' => 'sanitize_text_field',
+                ],
+            ],
+        ] );
+
         // ── Kundali ────────────────────────────────────────────────────────────
         register_rest_route( self::NAMESPACE, '/kundali', [
             [
@@ -233,6 +259,43 @@ class SAS_Rest_Api {
         }
 
         return new WP_REST_Response( $result, 200 );
+    }
+
+    // ── Panchang & Muhurat ─────────────────────────────────────────────────────
+
+    /**
+     * GET /sanathan/v1/panchang
+     * Returns daily Panchang data (Tithi, Nakshatra, Yoga, Karana, Vara, festivals).
+     * Cached via WP transient.
+     */
+    public static function get_panchang( WP_REST_Request $request ): WP_REST_Response {
+        $date = sanitize_text_field( $request->get_param( 'date' ) );
+        // validate YYYY-MM-DD or leave empty for today
+        if ( $date && ! preg_match( '/^\d{4}-\d{2}-\d{2}$/', $date ) ) {
+            $date = '';
+        }
+        $data = SAS_Panchang::get_today( $date );
+        if ( empty( $data ) ) {
+            return new WP_REST_Response( [ 'error' => 'Panchang data unavailable. Check API key.' ], 503 );
+        }
+        return new WP_REST_Response( $data, 200 );
+    }
+
+    /**
+     * GET /sanathan/v1/muhurat
+     * Returns Choghadiya muhurat slots for the day.
+     * Cached via WP transient.
+     */
+    public static function get_muhurat( WP_REST_Request $request ): WP_REST_Response {
+        $date = sanitize_text_field( $request->get_param( 'date' ) );
+        if ( $date && ! preg_match( '/^\d{4}-\d{2}-\d{2}$/', $date ) ) {
+            $date = '';
+        }
+        $data = SAS_Panchang::get_muhurat( $date );
+        if ( empty( $data ) ) {
+            return new WP_REST_Response( [ 'error' => 'Muhurat data unavailable. Check API key.' ], 503 );
+        }
+        return new WP_REST_Response( $data, 200 );
     }
 
     // ── Kundali ────────────────────────────────────────────────────────────────
