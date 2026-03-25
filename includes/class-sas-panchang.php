@@ -33,16 +33,22 @@ class SAS_Panchang {
         $key = 'sas_panchang_' . $date;
         $cached = get_transient( $key );
         if ( $cached !== false ) {
-            return $cached;
+            // Return [] for negative cache sentinel, real data otherwise
+            return $cached === '__sas_api_error__' ? [] : $cached;
         }
 
-        $dmy = DateTime::createFromFormat( 'Y-m-d', $date )->format( 'd/m/Y' );
+        $dt = DateTime::createFromFormat( 'Y-m-d', $date );
+        if ( ! $dt ) {
+            return [];
+        }
+        $dmy = $dt->format( 'd/m/Y' );
         $api  = new SAS_Api_Client();
         if ( ! $api->has_api_key() ) {
             return [];
         }
         $raw = $api->fetch_panchang( $dmy );
         if ( empty( $raw ) ) {
+            set_transient( $key, '__sas_api_error__', 300 ); // 5-min negative cache
             return [];
         }
 
@@ -66,16 +72,22 @@ class SAS_Panchang {
         $key = 'sas_muhurat_' . $date;
         $cached = get_transient( $key );
         if ( $cached !== false ) {
-            return $cached;
+            // Return [] for negative cache sentinel, real data otherwise
+            return $cached === '__sas_api_error__' ? [] : $cached;
         }
 
-        $dmy = DateTime::createFromFormat( 'Y-m-d', $date )->format( 'd/m/Y' );
+        $dt = DateTime::createFromFormat( 'Y-m-d', $date );
+        if ( ! $dt ) {
+            return [];
+        }
+        $dmy = $dt->format( 'd/m/Y' );
         $api  = new SAS_Api_Client();
         if ( ! $api->has_api_key() ) {
             return [];
         }
         $raw = $api->fetch_choghadiya( $dmy );
         if ( empty( $raw ) ) {
+            set_transient( $key, '__sas_api_error__', 300 ); // 5-min negative cache
             return [];
         }
 

@@ -274,6 +274,13 @@ class SAS_Rest_Api {
         if ( $date && ! preg_match( '/^\d{4}-\d{2}-\d{2}$/', $date ) ) {
             $date = '';
         }
+        // also validate the date values are real calendar dates
+        if ( $date ) {
+            [ $y, $m, $d ] = explode( '-', $date );
+            if ( ! checkdate( (int) $m, (int) $d, (int) $y ) ) {
+                $date = '';
+            }
+        }
         $data = SAS_Panchang::get_today( $date );
         if ( empty( $data ) ) {
             return new WP_REST_Response( [ 'error' => 'Panchang data unavailable. Check API key.' ], 503 );
@@ -290,6 +297,13 @@ class SAS_Rest_Api {
         $date = sanitize_text_field( $request->get_param( 'date' ) );
         if ( $date && ! preg_match( '/^\d{4}-\d{2}-\d{2}$/', $date ) ) {
             $date = '';
+        }
+        // also validate the date values are real calendar dates
+        if ( $date ) {
+            [ $y, $m, $d ] = explode( '-', $date );
+            if ( ! checkdate( (int) $m, (int) $d, (int) $y ) ) {
+                $date = '';
+            }
         }
         $data = SAS_Panchang::get_muhurat( $date );
         if ( empty( $data ) ) {
