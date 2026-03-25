@@ -29,9 +29,7 @@
 	 * @returns {string}
 	 */
 	function getFormattedDateIST() {
-		var now = new Date();
-		var ist = new Date( now.getTime() + ( 5.5 * 60 * 60 * 1000 ) );
-		return ist.toLocaleDateString( 'en-IN', {
+		return new Date().toLocaleDateString( 'en-IN', {
 			weekday:  'long',
 			day:      'numeric',
 			month:    'long',
@@ -81,6 +79,21 @@
 	function capitalize( s ) {
 		return s ? s[ 0 ].toUpperCase() + s.slice( 1 ) : '';
 	}
+
+	/**
+	 * Allow basic paragraph/line-break HTML but strip script tags and javascript: URLs.
+	 * @param {string} str
+	 * @returns {string}
+	 */
+	function safePredictionHtml( str ) {
+		return str
+			.replace( /<script[\s\S]*?<\/script>/gi, '' )
+			.replace( /javascript\s*:/gi, '' )
+			.replace( /on\w+\s*=/gi, '' );
+	}
+
+	// Module-scoped abort controller for zodiac fetch requests
+	var zodiacAbortController = null;
 
 	/* ─────────────────────────────────────────────
 	   PANCHANG HELPERS
@@ -274,15 +287,28 @@
 			{ label: 'Vara',      icon: '📅', value: extractPanchangField( data, 'vara' ) },
 		];
 
-		grid.innerHTML = fields.map( function( f ) {
-			return (
-				'<div class="sas-panchang-chip">' +
-					'<span class="sas-panchang-chip-icon">' + f.icon + '</span>' +
-					'<span class="sas-panchang-chip-label">' + f.label + '</span>' +
-					'<span class="sas-panchang-chip-value">' + ( f.value || '—' ) + '</span>' +
-				'</div>'
-			);
-		} ).join( '' );
+		grid.innerHTML = ''; // clear first
+		fields.forEach( function( f ) {
+			var chip = document.createElement( 'div' );
+			chip.className = 'sas-panchang-chip';
+
+			var icon = document.createElement( 'span' );
+			icon.className = 'sas-panchang-chip-icon';
+			icon.textContent = f.icon;
+
+			var label = document.createElement( 'span' );
+			label.className = 'sas-panchang-chip-label';
+			label.textContent = f.label;
+
+			var val = document.createElement( 'span' );
+			val.className = 'sas-panchang-chip-value';
+			val.textContent = f.value || '—';
+
+			chip.appendChild( icon );
+			chip.appendChild( label );
+			chip.appendChild( val );
+			grid.appendChild( chip );
+		} );
 
 		if ( loading ) loading.hidden = true;
 		grid.hidden = false;
@@ -302,14 +328,23 @@
 		if ( festivals.length === 0 ) {
 			list.innerHTML = '<p class="sas-dash-empty">No special festivals today. 🙏</p>';
 		} else {
-			list.innerHTML = festivals.map( function( f ) {
-				return (
-					'<div class="sas-festival-item">' +
-						'<span class="sas-festival-icon">🪔</span>' +
-						'<span class="sas-festival-name">' + f + '</span>' +
-					'</div>'
-				);
-			} ).join( '' );
+			list.innerHTML = '';
+			festivals.forEach( function( f ) {
+				var item = document.createElement( 'div' );
+				item.className = 'sas-festival-item';
+
+				var icon = document.createElement( 'span' );
+				icon.className = 'sas-festival-icon';
+				icon.textContent = '🪔';
+
+				var name = document.createElement( 'span' );
+				name.className = 'sas-festival-name';
+				name.textContent = f;
+
+				item.appendChild( icon );
+				item.appendChild( name );
+				list.appendChild( item );
+			} );
 		}
 
 		if ( loading ) loading.hidden = true;
@@ -332,26 +367,36 @@
 			return;
 		}
 
-		var auspicious = [ 'amrit', 'shubh', 'labh', 'char' ];
 		var slots = collectMuhuratSlots( data );
 
 		if ( slots.length === 0 ) {
 			list.innerHTML = '<p class="sas-dash-empty">No muhurat data available for today.</p>';
 		} else {
-			list.innerHTML = slots.map( function( slot ) {
-				var name        = slot.name || slot.muhurat_name || 'Unknown';
-				var isAuspicious = auspicious.indexOf( name.toLowerCase() ) !== -1;
-				var typeClass   = isAuspicious ? 'auspicious' : 'inauspicious';
-				var typeIcon    = isAuspicious ? '✅' : '⚠️';
-				var startTime   = slot.start_time || slot.start || '';
-				var endTime     = slot.end_time   || slot.end   || '';
-				return (
-					'<div class="sas-muhurat-slot ' + typeClass + '">' +
-						'<div class="sas-muhurat-name">' + typeIcon + ' ' + name + '</div>' +
-						'<div class="sas-muhurat-time">' + startTime + ' – ' + endTime + '</div>' +
-					'</div>'
-				);
-			} ).join( '' );
+			list.innerHTML = '';
+			slots.forEach( function( slot ) {
+				var name    = slot.name || slot.muhurat_name || 'Unknown';
+				var start   = slot.start_time || slot.start || slot.time || '';
+				var end     = slot.end_time   || slot.end   || '';
+				var timeStr = end ? ( start + ' – ' + end ) : start;
+
+				var auspicious = [ 'amrit', 'shubh', 'labh', 'char' ];
+				var isAusp     = auspicious.indexOf( name.toLowerCase() ) !== -1;
+
+				var slotEl = document.createElement( 'div' );
+				slotEl.className = 'sas-muhurat-slot ' + ( isAusp ? 'auspicious' : 'inauspicious' );
+
+				var nameEl = document.createElement( 'div' );
+				nameEl.className = 'sas-muhurat-name';
+				nameEl.textContent = ( isAusp ? '✅ ' : '⚠️ ' ) + name;
+
+				var timeEl = document.createElement( 'div' );
+				timeEl.className = 'sas-muhurat-time';
+				timeEl.textContent = timeStr;
+
+				slotEl.appendChild( nameEl );
+				slotEl.appendChild( timeEl );
+				list.appendChild( slotEl );
+			} );
 		}
 
 		if ( loading ) loading.hidden = true;
@@ -437,8 +482,26 @@
 
 		result.innerHTML = '<div class="sas-dash-loading"><span class="sas-spinner"></span> Loading prediction…</div>';
 
+		if ( zodiacAbortController ) {
+			zodiacAbortController.abort();
+		}
+		zodiacAbortController = new AbortController();
+		var zodiacSignal = zodiacAbortController.signal;
+
 		var url  = sasConfig.restBase + '/predictions?zodiac=' + zodiac + '&cycle=' + cycle + '&lang=' + lang;
-		var data = await apiFetch( url );
+		var data = null;
+		try {
+			var resp = await fetch( url, {
+				headers: { 'X-WP-Nonce': sasConfig.nonce },
+				signal: zodiacSignal,
+			} );
+			if ( resp.ok ) {
+				data = await resp.json();
+			}
+		} catch ( e ) {
+			if ( e.name === 'AbortError' ) return; // silently discard aborted request
+			data = null;
+		}
 
 		if ( ! data || ! data.data ) {
 			result.innerHTML = '<p class="sas-dash-error">Could not load prediction. Please try again.</p>';
@@ -460,7 +523,7 @@
 		result.innerHTML =
 			'<div class="sas-zodiac-card">' +
 				'<div class="sas-zodiac-sign-badge">' + getZodiacEmoji( zodiac ) + ' ' + capitalize( zodiac ) + '</div>' +
-				'<div class="sas-zodiac-prediction-text">' + text + '</div>' +
+				'<div class="sas-zodiac-prediction-text">' + safePredictionHtml( text ) + '</div>' +
 			'</div>';
 	}
 
