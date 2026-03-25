@@ -36,7 +36,9 @@ class SAS_Home {
 		add_shortcode( 'sas_home_events_preview',   [ __CLASS__, 'render_events_preview' ] );
 		add_shortcode( 'sas_home_services_preview', [ __CLASS__, 'render_services_preview' ] );
 		add_shortcode( 'sas_home_cta',              [ __CLASS__, 'render_cta' ] );
+		add_shortcode( 'sas_home_daily_dashboard',  [ __CLASS__, 'render_daily_dashboard' ] );
 		add_action( 'wp_enqueue_scripts',            [ __CLASS__, 'enqueue_assets' ] );
+		add_action( 'wp_footer',                     [ __CLASS__, 'render_guruji_float' ] );
 
 		// Fix Directorist single-category page: replace "Single Category" with real term name
 		add_filter( 'the_title',              [ __CLASS__, 'fix_directorist_category_title' ], 20, 2 );
@@ -106,10 +108,32 @@ class SAS_Home {
 	}
 
 	/**
-	 * Enqueue home CSS/JS on the front page.
+	 * Enqueue home CSS/JS on the front page; Guruji float on all frontend pages.
 	 */
-	public static function enqueue_assets() {
-		if ( ! is_front_page() && ! is_page( 'home' ) ) return;
+	public static function enqueue_assets(): void {
+		// ── Guruji Float: load on ALL frontend pages ────────────────────────
+		if ( ! is_admin() ) {
+			wp_enqueue_style(
+				'sas-guruji-float',
+				SAS_PLUGIN_URL . 'public/css/sas-guruji-float.css',
+				[],
+				SAS_VERSION
+			);
+			wp_enqueue_script(
+				'sas-guruji-float',
+				SAS_PLUGIN_URL . 'public/js/sas-guruji-float.js',
+				[],
+				SAS_VERSION,
+				true
+			);
+			// Inject shared config for all pages
+			wp_localize_script( 'sas-guruji-float', 'sasConfig', self::get_frontend_config() );
+		}
+
+		// ── Home page only: dashboard CSS/JS ───────────────────────────────
+		if ( ! is_front_page() && ! is_page( 'home' ) ) {
+			return;
+		}
 		wp_enqueue_style(
 			'sas-home',
 			SAS_PLUGIN_URL . 'public/css/sas-home.css',
@@ -123,6 +147,60 @@ class SAS_Home {
 			SAS_VERSION,
 			true
 		);
+		wp_enqueue_script(
+			'sas-dashboard',
+			SAS_PLUGIN_URL . 'public/js/sas-dashboard.js',
+			[],
+			SAS_VERSION,
+			true
+		);
+		// Override config on the homepage (dashboard JS needs it too)
+		wp_localize_script( 'sas-dashboard', 'sasConfig', self::get_frontend_config() );
+	}
+
+	/**
+	 * Build the sasConfig JS object used by dashboard and Guruji float scripts.
+	 *
+	 * @return array
+	 */
+	private static function get_frontend_config(): array {
+		$is_logged_in  = is_user_logged_in();
+		$has_kundali   = false;
+		$user_zodiac   = null;
+
+		if ( $is_logged_in ) {
+			$user_id = get_current_user_id();
+			// Check if user has an English kundali record (EN is always stored)
+			global $wpdb;
+			$table  = $wpdb->prefix . 'sanathan_kundali';
+			$exists = $wpdb->get_var( $wpdb->prepare(
+				"SELECT id FROM {$table} WHERE user_id = %d AND lang = 'en' LIMIT 1",
+				$user_id
+			) );
+			if ( $exists ) {
+				$has_kundali = true;
+				// Get the zodiac from birth profile (uses SAS_Kundali::extract_planet_sign)
+				if ( class_exists( 'SAS_Kundali' ) ) {
+					$profile = SAS_Kundali::get_birth_profile( $user_id );
+					if ( ! empty( $profile['zodiac'] ) ) {
+						$user_zodiac = strtolower( $profile['zodiac'] );
+					}
+				}
+			}
+		}
+
+		return [
+			'restBase'    => esc_url_raw( rest_url( 'sanathan/v1' ) ),
+			'nonce'       => wp_create_nonce( 'wp_rest' ),
+			'isLoggedIn'  => $is_logged_in,
+			'hasKundali'  => $has_kundali,
+			'userZodiac'  => $user_zodiac,
+			'defaultLang' => 'en',
+			'loginUrl'    => esc_url( wp_login_url( home_url( '/' ) ) ),
+			'registerUrl' => esc_url( wp_registration_url() ),
+			'kundaliUrl'  => esc_url( home_url( '/kundali/' ) ),
+			'gurujiUrl'   => esc_url( home_url( '/guruji/' ) ),
+		];
 	}
 
 	/* ─────────────────────────────────────────
@@ -492,6 +570,172 @@ class SAS_Home {
 			</div>
 		</div>
 		<?php return ob_get_clean();
+	}
+
+	/* ─────────────────────────────────────────
+	 * TODAY'S SACRED DASHBOARD
+	 * ───────────────────────────────────────── */
+	public static function render_daily_dashboard( $atts ): string {
+		ob_start(); ?>
+		<div class="sas-home-section sas-dashboard-section">
+			<div class="sas-container">
+
+				<!-- Section header -->
+				<div class="sas-dashboard-header">
+					<div class="sas-dashboard-title-row">
+						<h2 class="sas-section-title">🌅 Today's Sacred Dashboard</h2>
+						<span class="sas-today-date" id="sas-today-date"></span>
+					</div>
+					<p class="sas-section-subtitle">Daily Panchang, your zodiac reading, auspicious times and more</p>
+				</div>
+
+				<!-- Tab navigation -->
+				<div class="sas-dash-tabs" role="tablist" aria-label="Daily dashboard sections">
+					<button class="sas-dash-tab sas-dash-tab--active" data-tab="panchang" role="tab" aria-selected="true" aria-controls="sas-tab-panchang">
+						📿 Panchang
+					</button>
+					<button class="sas-dash-tab" data-tab="zodiac" role="tab" aria-selected="false" aria-controls="sas-tab-zodiac">
+						⭐ Your Zodiac
+					</button>
+					<button class="sas-dash-tab" data-tab="festivals" role="tab" aria-selected="false" aria-controls="sas-tab-festivals">
+						🕉️ Festivals
+					</button>
+					<button class="sas-dash-tab" data-tab="times" role="tab" aria-selected="false" aria-controls="sas-tab-times">
+						⏰ Good Times
+					</button>
+				</div>
+
+				<!-- Tab panels -->
+				<div class="sas-dash-panel sas-dash-panel--active" id="sas-tab-panchang" role="tabpanel">
+					<div class="sas-panchang-loading sas-dash-loading">
+						<span class="sas-spinner"></span> Loading today's Panchang…
+					</div>
+					<div class="sas-panchang-grid" id="sas-panchang-grid" hidden></div>
+				</div>
+
+				<div class="sas-dash-panel" id="sas-tab-zodiac" role="tabpanel" hidden>
+					<div class="sas-zodiac-controls">
+						<div class="sas-zodiac-selectors">
+							<select id="sas-zodiac-select" class="sas-select" aria-label="Select zodiac sign">
+								<option value="">Select your zodiac…</option>
+								<option value="aries">♈ Aries</option>
+								<option value="taurus">♉ Taurus</option>
+								<option value="gemini">♊ Gemini</option>
+								<option value="cancer">♋ Cancer</option>
+								<option value="leo">♌ Leo</option>
+								<option value="virgo">♍ Virgo</option>
+								<option value="libra">♎ Libra</option>
+								<option value="scorpio">♏ Scorpio</option>
+								<option value="sagittarius">♐ Sagittarius</option>
+								<option value="capricorn">♑ Capricorn</option>
+								<option value="aquarius">♒ Aquarius</option>
+								<option value="pisces">♓ Pisces</option>
+							</select>
+							<select id="sas-lang-select" class="sas-select" aria-label="Select language">
+								<option value="en">English</option>
+								<option value="hi">हिन्दी</option>
+								<option value="ta">தமிழ்</option>
+								<option value="te">తెలుగు</option>
+								<option value="ka">ಕನ್ನಡ</option>
+								<option value="ml">മലയാളം</option>
+								<option value="be">বাংলা</option>
+								<option value="sp">Español</option>
+								<option value="fr">Français</option>
+							</select>
+						</div>
+						<div class="sas-cycle-tabs" role="group" aria-label="Prediction cycle">
+							<button class="sas-cycle-btn sas-cycle-btn--active" data-cycle="daily">Daily</button>
+							<button class="sas-cycle-btn" data-cycle="weekly">Weekly</button>
+							<button class="sas-cycle-btn" data-cycle="yearly">Yearly</button>
+						</div>
+					</div>
+					<div id="sas-zodiac-result" class="sas-zodiac-result">
+						<div class="sas-dash-loading"><span class="sas-spinner"></span> Loading prediction…</div>
+					</div>
+				</div>
+
+				<div class="sas-dash-panel" id="sas-tab-festivals" role="tabpanel" hidden>
+					<div class="sas-panchang-loading sas-dash-loading">
+						<span class="sas-spinner"></span> Loading today's festivals…
+					</div>
+					<div id="sas-festivals-list" hidden></div>
+				</div>
+
+				<div class="sas-dash-panel" id="sas-tab-times" role="tabpanel" hidden>
+					<div class="sas-muhurat-loading sas-dash-loading">
+						<span class="sas-spinner"></span> Loading auspicious times…
+					</div>
+					<div id="sas-muhurat-list" hidden></div>
+				</div>
+
+				<!-- Kundali Panel (always below tabs) -->
+				<div class="sas-kundali-panel-wrapper">
+					<div class="sas-kundali-panel-header">
+						<h3 class="sas-kundali-panel-title">📿 Your Vedic Kundali</h3>
+					</div>
+					<?php echo do_shortcode( '[sas_kundali_form]' ); ?>
+				</div>
+
+			</div><!-- .sas-container -->
+		</div><!-- .sas-dashboard-section -->
+		<?php return ob_get_clean();
+	}
+
+	/* ─────────────────────────────────────────
+	 * GURUJI FLOATING CHAT BUBBLE
+	 * Injected into wp_footer on all frontend pages.
+	 * JS handles open/close and API communication.
+	 * ───────────────────────────────────────── */
+	public static function render_guruji_float(): void {
+		if ( is_admin() ) {
+			return;
+		}
+		?>
+		<div id="sas-guruji-float" aria-live="polite">
+			<button
+				id="sas-guruji-bubble"
+				class="sas-guruji-bubble"
+				aria-label="Chat with your personal Guruji"
+				aria-expanded="false"
+				aria-controls="sas-guruji-modal"
+			>
+				<span class="sas-guruji-bubble-icon" aria-hidden="true">🤖</span>
+				<span class="sas-guruji-bubble-label">Guruji</span>
+			</button>
+
+			<div
+				id="sas-guruji-modal"
+				class="sas-guruji-modal"
+				role="dialog"
+				aria-modal="true"
+				aria-label="Chat with Guruji"
+				hidden
+			>
+				<div class="sas-guruji-modal-header">
+					<div class="sas-guruji-modal-title">
+						<span class="sas-guruji-modal-avatar" aria-hidden="true">🤖</span>
+						<span>Your Personal Guruji</span>
+					</div>
+					<button id="sas-guruji-close" class="sas-guruji-close" aria-label="Close chat">✕</button>
+				</div>
+				<div id="sas-guruji-messages" class="sas-guruji-messages" role="log" aria-label="Chat messages"></div>
+				<div class="sas-guruji-input-row">
+					<input
+						type="text"
+						id="sas-guruji-input"
+						class="sas-guruji-input"
+						placeholder="Ask Guruji anything about dharma, astrology…"
+						autocomplete="off"
+						aria-label="Message to Guruji"
+						maxlength="500"
+					>
+					<button id="sas-guruji-send" class="sas-guruji-send" aria-label="Send message">
+						<span aria-hidden="true">↑</span>
+					</button>
+				</div>
+			</div>
+		</div>
+		<?php
 	}
 
 	/* ─────────────────────────────────────────
