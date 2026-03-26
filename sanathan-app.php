@@ -3,7 +3,7 @@
  * Plugin Name:       Sanathan Astro Services
  * Plugin URI:        https://sanathan.app
  * Description:       Cached Predictions, Kundali storage, Personal Guruji AI (Qdrant RAG), and FCM push notifications for the Sanathan Astrology platform. Powers the Flutter mobile app via REST API.
- * Version:           1.5.4
+ * Version:           1.5.5
  * Author:            Sanathan App
  * Author URI:        https://sanathan.app
  * License:           GPL-2.0+
@@ -16,7 +16,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-define( 'SAS_VERSION',     '1.5.4' );
+define( 'SAS_VERSION',     '1.5.5' );
 define( 'SAS_PLUGIN_DIR',  plugin_dir_path( __FILE__ ) );
 define( 'SAS_PLUGIN_URL',  plugin_dir_url( __FILE__ ) );
 define( 'SAS_PLUGIN_FILE', __FILE__ );
@@ -69,7 +69,97 @@ if ( is_admin() ) {
 // ─── Activation / Deactivation ────────────────────────────────────────────────
 
 register_activation_hook( __FILE__, [ 'SAS_DB', 'create_tables' ] );
+register_activation_hook( __FILE__, 'sas_create_required_pages' );
 register_deactivation_hook( __FILE__, [ 'SAS_Cron', 'deactivate' ] );
+
+/**
+ * Auto-create the WordPress pages that the plugin links to.
+ * Safe to call on every activation — wp_insert_post is skipped if the slug exists.
+ *
+ * Pages created:
+ *  /guruji/  — Personal Guruji AI chat  ([sas_guruji_page])
+ *  /kundali/ — Vedic Kundali dashboard  ([sas_kundali_form])
+ */
+function sas_create_required_pages(): void {
+    $pages = [
+        [
+            'title'   => 'My Guruji',
+            'slug'    => 'guruji',
+            'content' => '[sas_guruji_page]',
+        ],
+        [
+            'title'   => 'My Kundali',
+            'slug'    => 'kundali',
+            'content' => '[sas_kundali_form]',
+        ],
+    ];
+
+    foreach ( $pages as $page ) {
+        // get_page_by_path returns WP_Post if published/draft/trashed — only create if truly absent.
+        $existing = get_page_by_path( $page['slug'], OBJECT, 'page' );
+        if ( $existing ) {
+            continue; // already exists — never overwrite
+        }
+
+        wp_insert_post( [
+            'post_title'     => $page['title'],
+            'post_name'      => $page['slug'],
+            'post_content'   => $page['content'],
+            'post_status'    => 'publish',
+            'post_type'      => 'page',
+            'post_author'    => 1,
+            'comment_status' => 'closed',
+            'ping_status'    => 'closed',
+        ] );
+    }
+
+    // Flush rewrite rules so the new slugs resolve immediately.
+    flush_rewrite_rules();
+}
+
+/**
+ * Admin notice if required pages are missing (e.g. manually deleted).
+ * Shows a "Create Now" action link.
+ */
+add_action( 'admin_notices', 'sas_pages_admin_notice' );
+
+function sas_pages_admin_notice(): void {
+    if ( ! current_user_can( 'manage_options' ) ) {
+        return;
+    }
+
+    // Handle "Create Now" button.
+    if (
+        isset( $_GET['sas_create_pages'] ) &&
+        wp_verify_nonce( sanitize_key( $_GET['_wpnonce'] ?? '' ), 'sas_create_pages' )
+    ) {
+        sas_create_required_pages();
+        echo '<div class="notice notice-success is-dismissible"><p>✅ Sanathan pages created successfully.</p></div>';
+        return;
+    }
+
+    $missing = [];
+    foreach ( [ 'guruji', 'kundali' ] as $slug ) {
+        if ( ! get_page_by_path( $slug, OBJECT, 'page' ) ) {
+            $missing[] = '/' . $slug . '/';
+        }
+    }
+
+    if ( empty( $missing ) ) {
+        return;
+    }
+
+    $create_url = wp_nonce_url(
+        add_query_arg( 'sas_create_pages', '1', admin_url( 'admin.php?page=sanathan-astro' ) ),
+        'sas_create_pages'
+    );
+
+    echo '<div class="notice notice-warning is-dismissible"><p>';
+    echo '<strong>Sanathan Astro Services:</strong> The following pages are missing: ';
+    echo esc_html( implode( ', ', $missing ) ) . '. ';
+    echo '<a href="' . esc_url( $create_url ) . '"><strong>Create them now →</strong></a>';
+    echo '</p></div>';
+}
 
 // ─── Boot ─────────────────────────────────────────────────────────────────────
 

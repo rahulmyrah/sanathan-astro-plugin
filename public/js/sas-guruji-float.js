@@ -385,6 +385,12 @@
 				closeModal();
 			}
 		});
+
+		// Auto-open the chat modal when on the dedicated /guruji/ page.
+		// sasConfig.isGurujiPage is set to true by PHP only on that page.
+		if (sasConfig.isGurujiPage) {
+			openModal();
+		}
 	}
 
 	if (document.readyState === 'loading') {

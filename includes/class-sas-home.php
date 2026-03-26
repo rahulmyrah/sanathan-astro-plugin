@@ -37,6 +37,7 @@ class SAS_Home {
 		add_shortcode( 'sas_home_services_preview', [ __CLASS__, 'render_services_preview' ] );
 		add_shortcode( 'sas_home_cta',              [ __CLASS__, 'render_cta' ] );
 		add_shortcode( 'sas_home_daily_dashboard',  [ __CLASS__, 'render_daily_dashboard' ] );
+		add_shortcode( 'sas_guruji_page',           [ __CLASS__, 'render_guruji_page' ] );
 		add_action( 'wp_enqueue_scripts',            [ __CLASS__, 'enqueue_assets' ] );
 		add_action( 'wp_footer',                     [ __CLASS__, 'render_guruji_float' ] );
 		// Prevent page-cache plugins from serving a guest-cached page to logged-in users
@@ -233,8 +234,9 @@ class SAS_Home {
 			'defaultLang' => 'en',
 			'loginUrl'    => esc_url( wp_login_url( home_url( '/' ) ) ),
 			'registerUrl' => esc_url( wp_registration_url() ),
-			'kundaliUrl'  => esc_url( home_url( '/kundali/' ) ),
-			'gurujiUrl'   => esc_url( home_url( '/guruji/' ) ),
+			'kundaliUrl'   => esc_url( home_url( '/kundali/' ) ),
+			'gurujiUrl'    => esc_url( home_url( '/guruji/' ) ),
+			'isGurujiPage' => is_page( 'guruji' ),
 		];
 	}
 
@@ -714,6 +716,95 @@ class SAS_Home {
 			</div><!-- .sas-container -->
 		</div><!-- .sas-dashboard-section -->
 		<?php return ob_get_clean();
+	}
+
+	/* ─────────────────────────────────────────
+	 * GURUJI DEDICATED PAGE  [sas_guruji_page]
+	 * Renders a full-width landing panel on /guruji/.
+	 * The floating chat modal auto-opens via JS (sasConfig.isGurujiPage).
+	 * ───────────────────────────────────────── */
+	public static function render_guruji_page( $atts ): string {
+		$is_logged_in = is_user_logged_in();
+		$setup_url    = esc_url( home_url( '/guruji/' ) ); // page itself
+
+		// Fetch profile for logged-in users so we can display their Guruji name/avatar.
+		$guruji_name   = 'Guruji';
+		$avatar_html   = '<span class="sas-gp-avatar-emoji" aria-hidden="true">🤖</span>';
+		$setup_done    = false;
+
+		if ( $is_logged_in ) {
+			$profile = SAS_Guruji::get_profile( get_current_user_id() );
+			if ( $profile ) {
+				$setup_done  = true;
+				$guruji_name = esc_html( $profile['guruji_name'] ?? 'Guruji' );
+				if ( ! empty( $profile['resolved_avatar_url'] ) ) {
+					$avatar_html = '<img src="' . esc_url( $profile['resolved_avatar_url'] ) . '" alt="' . $guruji_name . '" class="sas-gp-avatar-img">';
+				}
+			}
+		}
+
+		ob_start();
+		?>
+		<div class="sas-guruji-page">
+			<div class="sas-guruji-page-inner">
+
+				<!-- Avatar & Name -->
+				<div class="sas-gp-avatar-wrap">
+					<?php echo $avatar_html; ?>
+				</div>
+
+				<?php if ( $is_logged_in && $setup_done ) : ?>
+					<h1 class="sas-gp-title">Your Personal <?php echo $guruji_name; ?></h1>
+					<p class="sas-gp-subtitle">Your Vedic spiritual guide — available 24/7 for dharma, astrology &amp; life guidance.</p>
+					<button
+						class="sas-btn sas-btn-gold sas-gp-open-btn"
+						onclick="document.getElementById('sas-guruji-bubble').click()"
+						type="button"
+					>
+						💬 Continue Conversation
+					</button>
+
+				<?php elseif ( $is_logged_in ) : ?>
+					<h1 class="sas-gp-title">Meet Your Personal Guruji</h1>
+					<p class="sas-gp-subtitle">You haven't set up your Guruji yet. It only takes a moment — choose a name, personality, and language.</p>
+					<button
+						class="sas-btn sas-btn-gold sas-gp-open-btn"
+						onclick="document.getElementById('sas-guruji-bubble').click()"
+						type="button"
+					>
+						🙏 Begin Setup
+					</button>
+
+				<?php else : ?>
+					<h1 class="sas-gp-title">Your Personal Vedic Guruji</h1>
+					<p class="sas-gp-subtitle">
+						A personal Vedic AI guide — your own Guruji available 24/7 for dharma guidance,
+						astrology, festivals, and spiritual questions. Responds in 9 Indian &amp; world languages.
+					</p>
+					<div class="sas-gp-guest-actions">
+						<a href="<?php echo esc_url( wp_registration_url() ); ?>" class="sas-btn sas-btn-gold">
+							Create Free Account →
+						</a>
+						<a href="<?php echo esc_url( wp_login_url( home_url( '/guruji/' ) ) ); ?>" class="sas-btn sas-btn-ghost">
+							Sign In
+						</a>
+					</div>
+				<?php endif; ?>
+
+				<!-- Feature chips -->
+				<div class="sas-gp-features">
+					<span class="sas-gp-chip">🔭 Vedic Astrology</span>
+					<span class="sas-gp-chip">🪔 Dharma &amp; Rituals</span>
+					<span class="sas-gp-chip">📿 Kundali Insights</span>
+					<span class="sas-gp-chip">🗓️ Muhurat Guidance</span>
+					<span class="sas-gp-chip">🌍 9 Languages</span>
+					<span class="sas-gp-chip">⚡ Available 24/7</span>
+				</div>
+
+			</div>
+		</div>
+		<?php
+		return ob_get_clean();
 	}
 
 	/* ─────────────────────────────────────────

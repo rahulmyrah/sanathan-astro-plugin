@@ -1342,3 +1342,148 @@
 	.sas-khl-value              { font-size: 0.85rem; }
 	.sas-dash-guest-buttons     { flex-direction: column; align-items: center; }
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   GURUJI PAGE  [sas_guruji_page]
+   Full-width landing section rendered on /guruji/
+═══════════════════════════════════════════════════════════════ */
+
+.sas-guruji-page {
+	min-height: 70vh;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 60px 20px;
+	background: linear-gradient(160deg, #0f0f23 0%, #1a1040 50%, #0d1b2a 100%);
+	position: relative;
+	overflow: hidden;
+}
+
+/* Subtle decorative glow behind the panel */
+.sas-guruji-page::before {
+	content: '';
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	width: 600px;
+	height: 600px;
+	border-radius: 50%;
+	background: radial-gradient(circle, rgba(212, 160, 23, 0.08) 0%, transparent 70%);
+	pointer-events: none;
+}
+
+.sas-guruji-page-inner {
+	position: relative;
+	text-align: center;
+	max-width: 600px;
+	width: 100%;
+}
+
+/* ── Avatar ── */
+.sas-gp-avatar-wrap {
+	margin: 0 auto 24px;
+	width: 120px;
+	height: 120px;
+	border-radius: 50%;
+	background: rgba(212, 160, 23, 0.12);
+	border: 3px solid rgba(212, 160, 23, 0.4);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	box-shadow: 0 0 40px rgba(212, 160, 23, 0.2);
+}
+
+.sas-gp-avatar-emoji {
+	font-size: 3rem;
+	line-height: 1;
+}
+
+.sas-gp-avatar-img {
+	width: 100%;
+	height: 100%;
+	border-radius: 50%;
+	object-fit: cover;
+}
+
+/* ── Title & subtitle ── */
+.sas-gp-title {
+	font-size: clamp(1.6rem, 4vw, 2.2rem);
+	font-weight: 700;
+	color: #fff;
+	margin: 0 0 14px;
+	line-height: 1.25;
+}
+
+.sas-gp-subtitle {
+	font-size: 1rem;
+	color: rgba(255, 255, 255, 0.72);
+	line-height: 1.6;
+	margin: 0 0 32px;
+}
+
+/* ── CTA button ── */
+.sas-gp-open-btn {
+	font-size: 1.05rem;
+	padding: 14px 32px;
+	margin-bottom: 36px;
+	cursor: pointer;
+	border: none;
+}
+
+/* ── Guest actions ── */
+.sas-gp-guest-actions {
+	display: flex;
+	gap: 14px;
+	justify-content: center;
+	flex-wrap: wrap;
+	margin-bottom: 36px;
+}
+
+.sas-gp-guest-actions .sas-btn-ghost {
+	border: 2px solid rgba(255, 255, 255, 0.35);
+	color: #fff;
+	background: transparent;
+	padding: 13px 28px;
+	border-radius: 8px;
+	text-decoration: none;
+	font-weight: 600;
+	transition: border-color 0.2s, background 0.2s;
+}
+.sas-gp-guest-actions .sas-btn-ghost:hover {
+	border-color: rgba(255, 255, 255, 0.65);
+	background: rgba(255, 255, 255, 0.06);
+}
+
+/* ── Feature chips ── */
+.sas-gp-features {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 10px;
+	justify-content: center;
+}
+
+.sas-gp-chip {
+	background: rgba(255, 255, 255, 0.07);
+	border: 1px solid rgba(255, 255, 255, 0.15);
+	color: rgba(255, 255, 255, 0.8);
+	padding: 6px 14px;
+	border-radius: 20px;
+	font-size: 0.82rem;
+	font-weight: 500;
+	transition: background 0.2s, border-color 0.2s;
+}
+.sas-gp-chip:hover {
+	background: rgba(212, 160, 23, 0.12);
+	border-color: rgba(212, 160, 23, 0.4);
+}
+
+/* ── Mobile ── */
+@media (max-width: 600px) {
+	.sas-guruji-page { padding: 40px 16px; }
+	.sas-gp-avatar-wrap { width: 90px; height: 90px; }
+	.sas-gp-avatar-emoji { font-size: 2.2rem; }
+	.sas-gp-guest-actions { flex-direction: column; align-items: center; }
+	.sas-gp-guest-actions .sas-btn,
+	.sas-gp-guest-actions .sas-btn-ghost { width: 100%; text-align: center; box-sizing: border-box; }
+}
