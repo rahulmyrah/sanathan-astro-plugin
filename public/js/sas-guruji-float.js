@@ -18,6 +18,41 @@
 	var elBubble, elModal, elClose, elMessages, elInput, elSend, elInputRow;
 
 	/* ─────────────────────────────────────────────
+	   Login-state helper
+	   wp_localize_script can be cached by full-page cache plugins (WP Rocket,
+	   W3TC, LiteSpeed, etc.) with isLoggedIn:false even for a logged-in user.
+	   Fall back to the WordPress login cookie, which is set on the client at
+	   login time and is accessible from JS (it is NOT httpOnly).
+	───────────────────────────────────────────── */
+
+	function getIsLoggedIn() {
+		// Trust the PHP value first — it is always correct on uncached pages.
+		if (sasConfig.isLoggedIn) return true;
+
+		// Fallback: WordPress sets 'wordpress_logged_in_<hash>' on login.
+		// This cookie is readable by JS (it is NOT httpOnly).
+		var cookieLoggedIn = document.cookie.indexOf('wordpress_logged_in_') !== -1;
+		if (!cookieLoggedIn) return false;
+
+		// Cookie says logged-in but the page was served from guest cache.
+		// A cached page also has a stale nonce (generated for user_id=0),
+		// so API calls would fail.  Reload once — most caching plugins skip
+		// the cache when the 'wordpress_logged_in_*' cookie is present, so
+		// the reload delivers the correct authenticated page with a fresh nonce.
+		// sessionStorage prevents infinite reload loops.
+		try {
+			var RELOAD_KEY = 'sas_auth_reload';
+			if (!sessionStorage.getItem(RELOAD_KEY)) {
+				sessionStorage.setItem(RELOAD_KEY, '1');
+				window.location.reload();
+				return false; // Execution stops here; reload is in progress.
+			}
+		} catch (e) { /* sessionStorage unavailable — skip reload guard */ }
+
+		return true;
+	}
+
+	/* ─────────────────────────────────────────────
 	   API helpers
 	───────────────────────────────────────────── */
 
@@ -216,7 +251,7 @@
 		elBubble.setAttribute('aria-expanded', 'true');
 		elInput.focus();
 
-		if (!sasConfig.isLoggedIn) {
+		if (!getIsLoggedIn()) {
 			// Show guest prompt only once
 			if (!elMessages.querySelector('.sas-guruji-guest-prompt')) {
 				showGuestPrompt();

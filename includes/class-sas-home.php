@@ -39,10 +39,29 @@ class SAS_Home {
 		add_shortcode( 'sas_home_daily_dashboard',  [ __CLASS__, 'render_daily_dashboard' ] );
 		add_action( 'wp_enqueue_scripts',            [ __CLASS__, 'enqueue_assets' ] );
 		add_action( 'wp_footer',                     [ __CLASS__, 'render_guruji_float' ] );
+		// Prevent page-cache plugins from serving a guest-cached page to logged-in users
+		add_action( 'template_redirect',             [ __CLASS__, 'maybe_nocache' ] );
 
 		// Fix Directorist single-category page: replace "Single Category" with real term name
 		add_filter( 'the_title',              [ __CLASS__, 'fix_directorist_category_title' ], 20, 2 );
 		add_filter( 'document_title_parts',   [ __CLASS__, 'fix_directorist_document_title' ], 20 );
+	}
+
+	/* ─────────────────────────────────────────
+	 * CACHE PREVENTION FOR LOGGED-IN USERS
+	 * Sends HTTP no-cache headers and sets the DONOTCACHEPAGE constant
+	 * so that full-page caching plugins (WP Rocket, W3TC, LiteSpeed Cache,
+	 * WP Super Cache) do not serve a guest-cached page to logged-in users.
+	 * This prevents login-state-sensitive content (hero, CTA, Guruji chat)
+	 * from appearing in the wrong state.
+	 * ───────────────────────────────────────── */
+	public static function maybe_nocache(): void {
+		if ( is_user_logged_in() && ! is_admin() ) {
+			nocache_headers();
+			if ( ! defined( 'DONOTCACHEPAGE' ) ) {
+				define( 'DONOTCACHEPAGE', true );
+			}
+		}
 	}
 
 	/* ─────────────────────────────────────────
