@@ -38,6 +38,7 @@ class SAS_Home {
 		add_shortcode( 'sas_home_cta',              [ __CLASS__, 'render_cta' ] );
 		add_shortcode( 'sas_home_daily_dashboard',  [ __CLASS__, 'render_daily_dashboard' ] );
 		add_shortcode( 'sas_guruji_page',           [ __CLASS__, 'render_guruji_page' ] );
+		add_shortcode( 'sas_home_chat',             [ __CLASS__, 'render_home_chat' ] );
 		add_action( 'wp_enqueue_scripts',            [ __CLASS__, 'enqueue_assets' ] );
 		add_action( 'wp_footer',                     [ __CLASS__, 'render_guruji_float' ] );
 		// Prevent page-cache plugins from serving a guest-cached page to logged-in users
@@ -177,6 +178,24 @@ class SAS_Home {
 		);
 		// Override config on the homepage (dashboard JS needs it too)
 		wp_localize_script( 'sas-dashboard', 'sasConfig', $config );
+
+		// ── Homepage chat ([sas_home_chat]) ─────────────────────────────────
+		wp_enqueue_style(
+			'sas-home-chat',
+			SAS_PLUGIN_URL . 'public/css/sas-home-chat.css',
+			[],
+			SAS_VERSION
+		);
+		wp_enqueue_script(
+			'sas-home-chat',
+			SAS_PLUGIN_URL . 'public/js/sas-home-chat.js',
+			[],
+			SAS_VERSION,
+			true
+		);
+		// Chat JS needs sasConfig (it reads restBase, nonce, isLoggedIn, userZodiac, etc.)
+		wp_localize_script( 'sas-home-chat', 'sasConfig', $config );
+
 		// Kundali form assets: must be explicitly loaded here because the form is
 		// embedded via do_shortcode() from PHP — has_shortcode() won't detect it
 		wp_enqueue_style(
@@ -719,6 +738,97 @@ class SAS_Home {
 	}
 
 	/* ─────────────────────────────────────────
+	 * HOMEPAGE CHAT  [sas_home_chat]
+	 * Chat-first homepage interface (à la ChatGPT / Claude).
+	 * Guests get real panchang/prediction data via public API + guided signup funnel.
+	 * Logged-in users get full Guruji AI chat with session history.
+	 * The Guruji floating bubble is suppressed on the front page.
+	 * ───────────────────────────────────────── */
+	public static function render_home_chat( $atts ): string {
+		$is_logged_in = is_user_logged_in();
+
+		// Resolve Guruji persona for logged-in users.
+		$guruji_name = 'Guruji';
+		$avatar_html = '<span class="sas-hc-avatar-emoji" aria-hidden="true">🤖</span>';
+		$greeting    = '🙏 Jai Shri Ram! Ask me anything about Vedic astrology, dharma, festivals or spirituality.';
+
+		if ( $is_logged_in ) {
+			$user     = wp_get_current_user();
+			$display  = esc_html( $user->display_name ?: $user->user_login );
+			$greeting = '🙏 Jai Shri Ram, ' . $display . '! How may I guide you today?';
+
+			$profile = SAS_Guruji::get_profile( get_current_user_id() );
+			if ( $profile ) {
+				$guruji_name = esc_html( $profile['guruji_name'] ?? 'Guruji' );
+				if ( ! empty( $profile['resolved_avatar_url'] ) ) {
+					$avatar_html = '<img src="' . esc_url( $profile['resolved_avatar_url'] ) . '" alt="' . esc_attr( $guruji_name ) . '" class="sas-hc-avatar-img">';
+				}
+			}
+		}
+
+		ob_start();
+		?>
+		<div id="sas-home-chat" class="sas-home-chat">
+
+			<!-- Welcome header (collapses when conversation begins) -->
+			<div id="sas-hc-welcome" class="sas-hc-welcome">
+				<div class="sas-hc-avatar-wrap"><?php echo $avatar_html; ?></div>
+				<h1 class="sas-hc-name"><?php echo $guruji_name; ?></h1>
+				<p class="sas-hc-greeting"><?php echo $greeting; ?></p>
+			</div>
+
+			<!-- Message history (flex:1, scrollable) -->
+			<div id="sas-hc-messages" class="sas-hc-messages" role="log" aria-label="Chat messages" aria-live="polite"></div>
+
+			<!-- Suggestion chips — hidden once any message is sent -->
+			<div id="sas-hc-chips" class="sas-hc-chips" role="list" aria-label="Quick questions">
+				<button class="sas-hc-chip" data-prompt="What is today&#39;s Panchang?" type="button">🗓️ Today's Panchang</button>
+				<button class="sas-hc-chip" data-prompt="What is my horoscope today?" type="button">🌟 Daily Horoscope</button>
+				<button class="sas-hc-chip" data-prompt="What festivals are coming up?" type="button">🪔 Festivals</button>
+				<button class="sas-hc-chip" data-prompt="What are the auspicious times today?" type="button">⏰ Muhurat</button>
+				<?php if ( $is_logged_in ) : ?>
+				<button class="sas-hc-chip" data-prompt="Tell me about my Kundali birth chart" type="button">📿 My Kundali</button>
+				<button class="sas-hc-chip" data-prompt="Give me a weekly reading for my zodiac" type="button">⭐ Weekly Reading</button>
+				<?php else : ?>
+				<button class="sas-hc-chip" data-prompt="How do I create my Kundali?" type="button">📿 Create Kundali</button>
+				<button class="sas-hc-chip" data-prompt="What can Guruji do for me?" type="button">✨ What can Guruji do?</button>
+				<?php endif; ?>
+			</div>
+
+			<!-- Input area (sticky bottom) -->
+			<div class="sas-hc-input-area">
+				<div class="sas-hc-input-row">
+					<textarea
+						id="sas-hc-input"
+						class="sas-hc-input"
+						placeholder="Ask Guruji about dharma, astrology, festivals…"
+						rows="1"
+						maxlength="500"
+						aria-label="Message to Guruji"
+						autocomplete="off"
+					></textarea>
+					<button id="sas-hc-send" class="sas-hc-send" aria-label="Send message" type="button">
+						<span aria-hidden="true">↑</span>
+					</button>
+				</div>
+				<?php if ( ! $is_logged_in ) : ?>
+				<div class="sas-hc-guest-bar">
+					<span class="sas-hc-guest-hint">🙏 Sign up free for Kundali, personalized readings &amp; full chat history</span>
+					<div class="sas-hc-guest-actions">
+						<a href="<?php echo esc_url( wp_registration_url() ); ?>" class="sas-hc-btn-signup">Create Free Account</a>
+						<a href="<?php echo esc_url( wp_login_url( home_url( '/' ) ) ); ?>" class="sas-hc-btn-signin">Sign In</a>
+					</div>
+				</div>
+				<?php endif; ?>
+				<p class="sas-hc-disclaimer">Guruji provides Vedic spiritual guidance · Not a substitute for professional advice</p>
+			</div>
+
+		</div>
+		<?php
+		return ob_get_clean();
+	}
+
+	/* ─────────────────────────────────────────
 	 * GURUJI DEDICATED PAGE  [sas_guruji_page]
 	 * Renders a full-width landing panel on /guruji/.
 	 * The floating chat modal auto-opens via JS (sasConfig.isGurujiPage).
@@ -814,6 +924,10 @@ class SAS_Home {
 	 * ───────────────────────────────────────── */
 	public static function render_guruji_float(): void {
 		if ( is_admin() ) {
+			return;
+		}
+		// Homepage uses the full-page embedded [sas_home_chat] — no floating bubble needed there.
+		if ( is_front_page() || is_home() ) {
 			return;
 		}
 		?>
