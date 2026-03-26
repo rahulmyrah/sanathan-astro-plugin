@@ -3,7 +3,7 @@
  * Plugin Name:       Sanathan Astro Services
  * Plugin URI:        https://sanathan.app
  * Description:       Cached Predictions, Kundali storage, Personal Guruji AI (Qdrant RAG), and FCM push notifications for the Sanathan Astrology platform. Powers the Flutter mobile app via REST API.
- * Version:           1.5.7
+ * Version:           1.5.8
  * Author:            Sanathan App
  * Author URI:        https://sanathan.app
  * License:           GPL-2.0+
@@ -16,7 +16,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-define( 'SAS_VERSION',     '1.5.7' );
+define( 'SAS_VERSION',     '1.5.8' );
 define( 'SAS_PLUGIN_DIR',  plugin_dir_path( __FILE__ ) );
 define( 'SAS_PLUGIN_URL',  plugin_dir_url( __FILE__ ) );
 define( 'SAS_PLUGIN_FILE', __FILE__ );
@@ -77,11 +77,18 @@ register_deactivation_hook( __FILE__, [ 'SAS_Cron', 'deactivate' ] );
  * Safe to call on every activation — wp_insert_post is skipped if the slug exists.
  *
  * Pages created:
- *  /guruji/  — Personal Guruji AI chat  ([sas_guruji_page])
- *  /kundali/ — Vedic Kundali dashboard  ([sas_kundali_form])
+ *  /sanathan-home/ — Chat-first homepage       ([sas_home_chat])         ← set as WP front page
+ *  /guruji/        — Personal Guruji AI chat   ([sas_guruji_page])
+ *  /kundali/       — Vedic Kundali dashboard   ([sas_kundali_form])
  */
 function sas_create_required_pages(): void {
     $pages = [
+        [
+            'title'    => 'Sanathan — Your Vedic AI Guide',
+            'slug'     => 'sanathan-home',
+            'content'  => '[sas_home_chat]',
+            'template' => 'elementor-full-width', // keeps site header/nav, removes page container
+        ],
         [
             'title'   => 'My Guruji',
             'slug'    => 'guruji',
@@ -101,7 +108,7 @@ function sas_create_required_pages(): void {
             continue; // already exists — never overwrite
         }
 
-        wp_insert_post( [
+        $page_id = wp_insert_post( [
             'post_title'     => $page['title'],
             'post_name'      => $page['slug'],
             'post_content'   => $page['content'],
@@ -111,6 +118,21 @@ function sas_create_required_pages(): void {
             'comment_status' => 'closed',
             'ping_status'    => 'closed',
         ] );
+
+        // Apply page template if specified (e.g. Elementor Full Width).
+        if ( ! is_wp_error( $page_id ) && ! empty( $page['template'] ) ) {
+            update_post_meta( $page_id, '_wp_page_template', $page['template'] );
+        }
+    }
+
+    // ── Set the chat homepage as the WordPress front page ─────────────────────
+    // Only switch when WordPress is still in its default "latest posts" mode.
+    // If the user already has a static front page configured, leave it untouched.
+    $chat_page = get_page_by_path( 'sanathan-home', OBJECT, 'page' );
+    if ( $chat_page && get_option( 'show_on_front' ) !== 'page' ) {
+        update_option( 'show_on_front',  'page' );
+        update_option( 'page_on_front',  $chat_page->ID );
+        update_option( 'page_for_posts', 0 );
     }
 
     // Flush rewrite rules so the new slugs resolve immediately.
@@ -139,7 +161,7 @@ function sas_pages_admin_notice(): void {
     }
 
     $missing = [];
-    foreach ( [ 'guruji', 'kundali' ] as $slug ) {
+    foreach ( [ 'sanathan-home', 'guruji', 'kundali' ] as $slug ) {
         if ( ! get_page_by_path( $slug, OBJECT, 'page' ) ) {
             $missing[] = '/' . $slug . '/';
         }
