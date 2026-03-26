@@ -766,64 +766,169 @@ class SAS_Home {
 			}
 		}
 
+		// Today's IST date for sidebar header
+		$ist_date = ( new DateTime( 'now', new DateTimeZone( 'Asia/Kolkata' ) ) )->format( 'D, j M Y' );
+
 		ob_start();
 		?>
 		<div id="sas-home-chat" class="sas-home-chat">
 
-			<!-- Welcome header (collapses when conversation begins) -->
-			<div id="sas-hc-welcome" class="sas-hc-welcome">
-				<div class="sas-hc-avatar-wrap"><?php echo $avatar_html; ?></div>
-				<h1 class="sas-hc-name"><?php echo $guruji_name; ?></h1>
-				<p class="sas-hc-greeting"><?php echo $greeting; ?></p>
-			</div>
+			<!-- ═══════════════════════════════════════════
+			     SIDEBAR
+			     ═══════════════════════════════════════════ -->
+			<aside id="sas-hc-sidebar" class="sas-hc-sidebar" aria-label="Navigation">
 
-			<!-- Message history (flex:1, scrollable) -->
-			<div id="sas-hc-messages" class="sas-hc-messages" role="log" aria-label="Chat messages" aria-live="polite"></div>
+				<!-- Sidebar header: brand + today's date -->
+				<div class="sas-hc-sidebar-header">
+					<span class="sas-hc-sb-brand">🕉️ Sanathan</span>
+					<span class="sas-hc-sb-date"><?php echo esc_html( $ist_date ); ?></span>
+				</div>
 
-			<!-- Suggestion chips — hidden once any message is sent -->
-			<div id="sas-hc-chips" class="sas-hc-chips" role="list" aria-label="Quick questions">
-				<button class="sas-hc-chip" data-prompt="What is today&#39;s Panchang?" type="button">🗓️ Today's Panchang</button>
-				<button class="sas-hc-chip" data-prompt="What is my horoscope today?" type="button">🌟 Daily Horoscope</button>
-				<button class="sas-hc-chip" data-prompt="What festivals are coming up?" type="button">🪔 Festivals</button>
-				<button class="sas-hc-chip" data-prompt="What are the auspicious times today?" type="button">⏰ Muhurat</button>
-				<?php if ( $is_logged_in ) : ?>
-				<button class="sas-hc-chip" data-prompt="Tell me about my Kundali birth chart" type="button">📿 My Kundali</button>
-				<button class="sas-hc-chip" data-prompt="Give me a weekly reading for my zodiac" type="button">⭐ Weekly Reading</button>
-				<?php else : ?>
-				<button class="sas-hc-chip" data-prompt="How do I create my Kundali?" type="button">📿 Create Kundali</button>
-				<button class="sas-hc-chip" data-prompt="What can Guruji do for me?" type="button">✨ What can Guruji do?</button>
-				<?php endif; ?>
-			</div>
-
-			<!-- Input area (sticky bottom) -->
-			<div class="sas-hc-input-area">
-				<div class="sas-hc-input-row">
-					<textarea
-						id="sas-hc-input"
-						class="sas-hc-input"
-						placeholder="Ask Guruji about dharma, astrology, festivals…"
-						rows="1"
-						maxlength="500"
-						aria-label="Message to Guruji"
-						autocomplete="off"
-					></textarea>
-					<button id="sas-hc-send" class="sas-hc-send" aria-label="Send message" type="button">
-						<span aria-hidden="true">↑</span>
+				<!-- ── Today ── -->
+				<nav class="sas-hc-sidebar-section">
+					<div class="sas-hc-sidebar-section-label">☀️ Today</div>
+					<button class="sas-hc-sidebar-item" data-prompt="What is today&#39;s Panchang?" type="button">
+						<span class="sas-hc-sb-icon">🗓️</span> Panchang
 					</button>
-				</div>
-				<?php if ( ! $is_logged_in ) : ?>
-				<div class="sas-hc-guest-bar">
-					<span class="sas-hc-guest-hint">🙏 Sign up free for Kundali, personalized readings &amp; full chat history</span>
-					<div class="sas-hc-guest-actions">
-						<a href="<?php echo esc_url( wp_registration_url() ); ?>" class="sas-hc-btn-signup">Create Free Account</a>
-						<a href="<?php echo esc_url( wp_login_url( home_url( '/' ) ) ); ?>" class="sas-hc-btn-signin">Sign In</a>
+					<button class="sas-hc-sidebar-item" data-prompt="What is my horoscope today?" type="button">
+						<span class="sas-hc-sb-icon">🌟</span> Daily Horoscope
+					</button>
+					<button class="sas-hc-sidebar-item" data-prompt="What festivals are coming up?" type="button">
+						<span class="sas-hc-sb-icon">🪔</span> Festivals
+					</button>
+					<button class="sas-hc-sidebar-item" data-prompt="What are the auspicious times today?" type="button">
+						<span class="sas-hc-sb-icon">⏰</span> Muhurat
+					</button>
+					<button class="sas-hc-sidebar-item" data-prompt="Give me a weekly reading for my zodiac" type="button">
+						<span class="sas-hc-sb-icon">⭐</span> Weekly Forecast
+					</button>
+				</nav>
+
+				<!-- ── My Space ── -->
+				<nav class="sas-hc-sidebar-section">
+					<div class="sas-hc-sidebar-section-label">📿 My Space</div>
+					<?php if ( $is_logged_in ) : ?>
+					<button class="sas-hc-sidebar-item" data-prompt="Tell me about my Kundali birth chart" type="button">
+						<span class="sas-hc-sb-icon">📿</span> My Kundali
+					</button>
+					<button class="sas-hc-sidebar-item" data-prompt="Give me my yearly astrological forecast" type="button">
+						<span class="sas-hc-sb-icon">📅</span> Yearly Forecast
+					</button>
+					<button class="sas-hc-sidebar-item" data-prompt="What dharma practices should I follow?" type="button">
+						<span class="sas-hc-sb-icon">🙏</span> Daily Dharma
+					</button>
+					<?php else : ?>
+					<div class="sas-hc-sidebar-item sas-hc-locked" role="button" tabindex="0" data-locked-feature="Kundali">
+						<span class="sas-hc-sb-icon">📿</span> My Kundali <span class="sas-hc-lock-icon">🔒</span>
 					</div>
+					<div class="sas-hc-sidebar-item sas-hc-locked" role="button" tabindex="0" data-locked-feature="Yearly Forecast">
+						<span class="sas-hc-sb-icon">📅</span> Yearly Forecast <span class="sas-hc-lock-icon">🔒</span>
+					</div>
+					<div class="sas-hc-sidebar-item sas-hc-locked" role="button" tabindex="0" data-locked-feature="Daily Dharma">
+						<span class="sas-hc-sb-icon">🙏</span> Daily Dharma <span class="sas-hc-lock-icon">🔒</span>
+					</div>
+					<?php endif; ?>
+				</nav>
+
+				<!-- ── Explore ── -->
+				<nav class="sas-hc-sidebar-section">
+					<div class="sas-hc-sidebar-section-label">🕉️ Explore</div>
+					<a class="sas-hc-sidebar-item sas-hc-sb-link" href="<?php echo esc_url( home_url( '/ai-tools/' ) ); ?>">
+						<span class="sas-hc-sb-icon">🛕</span> Hindu AI Tools
+					</a>
+					<a class="sas-hc-sidebar-item sas-hc-sb-link" href="<?php echo esc_url( home_url( '/kundali/' ) ); ?>">
+						<span class="sas-hc-sb-icon">🔮</span> Kundali Calculator
+					</a>
+					<a class="sas-hc-sidebar-item sas-hc-sb-link" href="<?php echo esc_url( home_url( '/connect/' ) ); ?>">
+						<span class="sas-hc-sb-icon">👥</span> Community
+					</a>
+					<a class="sas-hc-sidebar-item sas-hc-sb-link" href="<?php echo esc_url( home_url( '/dharma-events/' ) ); ?>">
+						<span class="sas-hc-sb-icon">📅</span> Events
+					</a>
+					<a class="sas-hc-sidebar-item sas-hc-sb-link" href="<?php echo esc_url( home_url( '/services/' ) ); ?>">
+						<span class="sas-hc-sb-icon">🛕</span> Dharma Services
+					</a>
+				</nav>
+
+				<!-- ── Auth footer (guests only) ── -->
+				<?php if ( ! $is_logged_in ) : ?>
+				<div class="sas-hc-sidebar-footer">
+					<a href="<?php echo esc_url( wp_registration_url() ); ?>" class="sas-hc-sb-signup">
+						🙏 Create Free Account
+					</a>
+					<a href="<?php echo esc_url( wp_login_url( home_url( '/' ) ) ); ?>" class="sas-hc-sb-signin">
+						Sign In
+					</a>
+				</div>
+				<?php else : ?>
+				<div class="sas-hc-sidebar-footer sas-hc-sidebar-user-footer">
+					<a href="<?php echo esc_url( home_url( '/guruji/' ) ); ?>" class="sas-hc-sb-profile-link">
+						<?php echo $avatar_html; ?>
+						<span><?php echo esc_html( wp_get_current_user()->display_name ?: 'My Profile' ); ?></span>
+					</a>
 				</div>
 				<?php endif; ?>
-				<p class="sas-hc-disclaimer">Guruji provides Vedic spiritual guidance · Not a substitute for professional advice</p>
-			</div>
 
-		</div>
+			</aside><!-- /sidebar -->
+
+			<!-- Mobile overlay (closes sidebar on click) -->
+			<div id="sas-hc-overlay" class="sas-hc-overlay" aria-hidden="true"></div>
+
+			<!-- Mobile hamburger toggle -->
+			<button id="sas-hc-hamburger" class="sas-hc-hamburger" aria-label="Toggle navigation" aria-expanded="false" type="button">
+				<span></span><span></span><span></span>
+			</button>
+
+			<!-- ═══════════════════════════════════════════
+			     MAIN CHAT AREA
+			     ═══════════════════════════════════════════ -->
+			<div class="sas-hc-main">
+
+				<!-- Welcome header (collapses when conversation begins) -->
+				<div id="sas-hc-welcome" class="sas-hc-welcome">
+					<div class="sas-hc-avatar-wrap"><?php echo $avatar_html; ?></div>
+					<h1 class="sas-hc-name"><?php echo $guruji_name; ?></h1>
+					<p class="sas-hc-greeting"><?php echo $greeting; ?></p>
+				</div>
+
+				<!-- Message history -->
+				<div id="sas-hc-messages" class="sas-hc-messages" role="log" aria-label="Chat messages" aria-live="polite"></div>
+
+				<!-- Suggestion chips (mobile fallback — hidden on desktop where sidebar shows) -->
+				<div id="sas-hc-chips" class="sas-hc-chips" role="list" aria-label="Quick questions">
+					<button class="sas-hc-chip" data-prompt="What is today&#39;s Panchang?" type="button">🗓️ Panchang</button>
+					<button class="sas-hc-chip" data-prompt="What is my horoscope today?" type="button">🌟 Horoscope</button>
+					<button class="sas-hc-chip" data-prompt="What festivals are coming up?" type="button">🪔 Festivals</button>
+					<button class="sas-hc-chip" data-prompt="What are the auspicious times today?" type="button">⏰ Muhurat</button>
+					<?php if ( $is_logged_in ) : ?>
+					<button class="sas-hc-chip" data-prompt="Tell me about my Kundali birth chart" type="button">📿 Kundali</button>
+					<?php else : ?>
+					<button class="sas-hc-chip" data-prompt="What can Guruji do for me?" type="button">✨ What can Guruji do?</button>
+					<?php endif; ?>
+				</div>
+
+				<!-- Input area -->
+				<div class="sas-hc-input-area">
+					<div class="sas-hc-input-row">
+						<textarea
+							id="sas-hc-input"
+							class="sas-hc-input"
+							placeholder="Ask Guruji about dharma, astrology, festivals…"
+							rows="1"
+							maxlength="500"
+							aria-label="Message to Guruji"
+							autocomplete="off"
+						></textarea>
+						<button id="sas-hc-send" class="sas-hc-send" aria-label="Send message" type="button">
+							<span aria-hidden="true">↑</span>
+						</button>
+					</div>
+					<p class="sas-hc-disclaimer">Guruji provides Vedic spiritual guidance · Not a substitute for professional advice</p>
+				</div>
+
+			</div><!-- /sas-hc-main -->
+
+		</div><!-- /sas-home-chat -->
 		<?php
 		return ob_get_clean();
 	}

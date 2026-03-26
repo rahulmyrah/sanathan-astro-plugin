@@ -1,17 +1,19 @@
 /**
- * Sanathan Home Chat — Full-page chat interface styles
- * Powers [sas_home_chat] shortcode. Dark/gold Vedic theme.
- * Inspired by ChatGPT / Claude minimal chat UX.
+ * Sanathan Home Chat — Sidebar + Chat layout
+ * Powers [sas_home_chat] shortcode.
+ * Layout: persistent left sidebar (260px) + flexible main chat column.
+ * Mobile: sidebar slides in via hamburger; main takes full width.
  */
 
 /* ════════════════════════════════════════════════════════
-   OUTER WRAPPER
+   OUTER WRAPPER  — flex ROW (sidebar + main side by side)
 ════════════════════════════════════════════════════════ */
 
 .sas-home-chat {
 	display: flex;
-	flex-direction: column;
-	min-height: calc(100vh - 120px); /* subtract approx nav height */
+	flex-direction: row;
+	align-items: stretch;
+	min-height: calc(100vh - 80px);
 	background: #0c0c1e;
 	color: #e8e0d6;
 	font-family: inherit;
@@ -19,32 +21,305 @@
 	overflow: hidden;
 }
 
-/* Subtle radial glow in the background */
-.sas-home-chat::before {
+/* ════════════════════════════════════════════════════════
+   SIDEBAR
+════════════════════════════════════════════════════════ */
+
+.sas-hc-sidebar {
+	width: 260px;
+	flex-shrink: 0;
+	display: flex;
+	flex-direction: column;
+	background: #0a0a1a;
+	border-right: 1px solid rgba(255,255,255,0.07);
+	overflow-y: auto;
+	overflow-x: hidden;
+	height: calc(100vh - 80px);
+	position: sticky;
+	top: 0;
+	z-index: 20;
+	scrollbar-width: thin;
+	scrollbar-color: rgba(255,255,255,0.1) transparent;
+}
+
+.sas-hc-sidebar::-webkit-scrollbar        { width: 4px; }
+.sas-hc-sidebar::-webkit-scrollbar-thumb  { background: rgba(255,255,255,0.1); border-radius: 4px; }
+.sas-hc-sidebar::-webkit-scrollbar-track  { background: transparent; }
+
+/* ── Sidebar header ── */
+.sas-hc-sidebar-header {
+	padding: 18px 16px 12px;
+	border-bottom: 1px solid rgba(255,255,255,0.07);
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+
+.sas-hc-sb-brand {
+	font-size: 0.95rem;
+	font-weight: 700;
+	color: #fff;
+	letter-spacing: -0.01em;
+}
+
+.sas-hc-sb-date {
+	font-size: 0.72rem;
+	color: rgba(255,255,255,0.38);
+	letter-spacing: 0.02em;
+}
+
+/* ── Sidebar sections ── */
+.sas-hc-sidebar-section {
+	padding: 20px 8px 4px;
+}
+
+/* Section label e.g. "☀️ Today" */
+.sas-hc-sidebar-section-label {
+	font-size: 0.68rem;
+	text-transform: uppercase;
+	letter-spacing: 0.08em;
+	color: rgba(255,255,255,0.3);
+	padding: 0 8px 8px;
+	display: block;
+}
+
+/* ── Sidebar item (shared between <button>, <a>, <div>) ── */
+.sas-hc-sidebar-item {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	width: 100%;
+	padding: 9px 10px;
+	border-radius: 8px;
+	font-size: 0.87rem;
+	color: rgba(255,255,255,0.65);
+	cursor: pointer;
+	transition: background 0.18s ease, color 0.18s ease;
+	/* reset for both <button> and <a> */
+	background: transparent;
+	border: none;
+	text-align: left;
+	text-decoration: none;
+	font-family: inherit;
+	margin-bottom: 2px;
+	line-height: 1.3;
+}
+
+.sas-hc-sidebar-item:hover,
+.sas-hc-sidebar-item:focus-visible {
+	background: rgba(255,255,255,0.07);
+	color: #fff;
+	outline: none;
+}
+
+.sas-hc-sidebar-item--active {
+	background: rgba(212,160,23,0.12) !important;
+	color: #d4a017 !important;
+	border-left: 2px solid #d4a017;
+	padding-left: 8px;
+}
+
+/* Icon span inside each item */
+.sas-hc-sb-icon {
+	font-size: 1rem;
+	flex-shrink: 0;
+	width: 20px;
+	text-align: center;
+}
+
+/* Locked items (guest My Space) */
+.sas-hc-locked {
+	color: rgba(255,255,255,0.28) !important;
+	cursor: pointer;
+}
+
+.sas-hc-locked:hover {
+	background: rgba(255,255,255,0.04) !important;
+	color: rgba(255,255,255,0.4) !important;
+}
+
+.sas-hc-lock-icon {
+	margin-left: auto;
+	font-size: 0.75rem;
+	opacity: 0.6;
+}
+
+/* External link items */
+.sas-hc-sb-link:after {
+	content: '↗';
+	margin-left: auto;
+	font-size: 0.65rem;
+	opacity: 0.35;
+	flex-shrink: 0;
+}
+
+/* ── Sidebar divider ── */
+.sas-hc-sb-divider {
+	height: 1px;
+	background: rgba(255,255,255,0.06);
+	margin: 8px 16px;
+}
+
+/* ── Sidebar footer ── */
+.sas-hc-sidebar-footer {
+	margin-top: auto;
+	padding: 14px 12px;
+	border-top: 1px solid rgba(255,255,255,0.07);
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.sas-hc-sb-signup {
+	display: block;
+	text-align: center;
+	background: #d4a017;
+	color: #000;
+	padding: 9px 16px;
+	border-radius: 8px;
+	text-decoration: none;
+	font-weight: 700;
+	font-size: 0.83rem;
+	transition: background 0.2s;
+}
+.sas-hc-sb-signup:hover { background: #e6b520; color: #000; }
+
+.sas-hc-sb-signin {
+	display: block;
+	text-align: center;
+	color: rgba(255,255,255,0.45);
+	font-size: 0.82rem;
+	text-decoration: underline;
+	padding: 5px;
+	transition: color 0.2s;
+}
+.sas-hc-sb-signin:hover { color: #fff; }
+
+/* User footer (logged-in state) */
+.sas-hc-sidebar-user-footer .sas-hc-sb-profile-link {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding: 8px 6px;
+	border-radius: 8px;
+	text-decoration: none;
+	color: rgba(255,255,255,0.65);
+	font-size: 0.85rem;
+	transition: background 0.2s, color 0.2s;
+}
+.sas-hc-sidebar-user-footer .sas-hc-sb-profile-link:hover {
+	background: rgba(255,255,255,0.07);
+	color: #fff;
+}
+.sas-hc-sidebar-user-footer .sas-hc-avatar-emoji,
+.sas-hc-sidebar-user-footer .sas-hc-avatar-img {
+	width: 28px;
+	height: 28px;
+	border-radius: 50%;
+	object-fit: cover;
+	font-size: 1.3rem;
+	flex-shrink: 0;
+}
+
+/* ════════════════════════════════════════════════════════
+   MOBILE HAMBURGER BUTTON
+   Shown only on mobile (≤768px) — absolute-positioned
+   over the top-left of the main chat area.
+════════════════════════════════════════════════════════ */
+
+.sas-hc-hamburger {
+	display: none; /* visible via media query */
+	position: absolute;
+	top: 14px;
+	left: 14px;
+	z-index: 30;
+	width: 38px;
+	height: 38px;
+	background: rgba(255,255,255,0.07);
+	border: 1px solid rgba(255,255,255,0.13);
+	border-radius: 8px;
+	cursor: pointer;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 5px;
+	padding: 0;
+	transition: background 0.2s;
+}
+.sas-hc-hamburger:hover { background: rgba(255,255,255,0.12); }
+
+.sas-hc-hamburger span {
+	display: block;
+	width: 18px;
+	height: 2px;
+	background: rgba(255,255,255,0.8);
+	border-radius: 2px;
+	transition: transform 0.25s ease, opacity 0.2s ease;
+	transform-origin: center;
+}
+
+/* "X" state when sidebar is open */
+.sas-hc-hamburger.sas-hc-hamburger--open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+.sas-hc-hamburger.sas-hc-hamburger--open span:nth-child(2) { opacity: 0; transform: scaleX(0); }
+.sas-hc-hamburger.sas-hc-hamburger--open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+/* ════════════════════════════════════════════════════════
+   MOBILE OVERLAY  (dims the main area when sidebar open)
+════════════════════════════════════════════════════════ */
+
+.sas-hc-overlay {
+	display: none;
+	position: fixed;
+	inset: 0;
+	background: rgba(0,0,0,0.6);
+	z-index: 19;
+	opacity: 0;
+	transition: opacity 0.3s ease;
+}
+
+.sas-hc-overlay.sas-hc-overlay--visible {
+	display: block;
+	opacity: 1;
+}
+
+/* ════════════════════════════════════════════════════════
+   MAIN CHAT COLUMN
+════════════════════════════════════════════════════════ */
+
+.sas-hc-main {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	min-width: 0;       /* prevent flex overflow */
+	overflow: hidden;
+	position: relative;
+}
+
+/* Subtle background glow centered in the main area */
+.sas-hc-main::before {
 	content: '';
 	position: absolute;
 	top: 0;
 	left: 50%;
 	transform: translateX(-50%);
-	width: 800px;
-	height: 400px;
-	background: radial-gradient(ellipse at top, rgba(212,160,23,0.07) 0%, transparent 70%);
+	width: 700px;
+	height: 350px;
+	background: radial-gradient(ellipse at top, rgba(212,160,23,0.06) 0%, transparent 70%);
 	pointer-events: none;
 	z-index: 0;
 }
 
 /* ════════════════════════════════════════════════════════
-   WELCOME HEADER
-   Collapses with a smooth CSS transition when chat begins.
+   WELCOME HEADER  (collapses when chat starts)
 ════════════════════════════════════════════════════════ */
 
 .sas-hc-welcome {
 	flex-shrink: 0;
 	text-align: center;
-	padding: 52px 20px 24px;
+	padding: 48px 24px 20px;
 	position: relative;
 	z-index: 1;
-	max-height: 320px;
+	max-height: 340px;
 	overflow: hidden;
 	transition: max-height 0.45s ease, opacity 0.3s ease, padding 0.35s ease;
 }
@@ -58,19 +333,19 @@
 }
 
 .sas-hc-avatar-wrap {
-	width: 84px;
-	height: 84px;
+	width: 80px;
+	height: 80px;
 	border-radius: 50%;
 	background: rgba(212,160,23,0.1);
-	border: 2px solid rgba(212,160,23,0.35);
+	border: 2px solid rgba(212,160,23,0.3);
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	margin: 0 auto 18px;
-	box-shadow: 0 0 32px rgba(212,160,23,0.15);
+	margin: 0 auto 16px;
+	box-shadow: 0 0 28px rgba(212,160,23,0.12);
 }
 
-.sas-hc-avatar-emoji { font-size: 2.4rem; line-height: 1; }
+.sas-hc-avatar-emoji { font-size: 2.2rem; line-height: 1; }
 
 .sas-hc-avatar-img {
 	width: 100%;
@@ -80,18 +355,17 @@
 }
 
 .sas-hc-name {
-	font-size: clamp(1.5rem, 3.5vw, 2rem);
+	font-size: clamp(1.4rem, 3vw, 1.9rem);
 	font-weight: 700;
 	color: #fff;
 	margin: 0 0 10px;
-	letter-spacing: -0.01em;
 }
 
 .sas-hc-greeting {
-	font-size: 1rem;
-	color: rgba(255,255,255,0.58);
+	font-size: 0.97rem;
+	color: rgba(255,255,255,0.55);
 	margin: 0;
-	max-width: 460px;
+	max-width: 420px;
 	margin-left: auto;
 	margin-right: auto;
 	line-height: 1.55;
@@ -104,18 +378,21 @@
 .sas-hc-messages {
 	flex: 1;
 	overflow-y: auto;
-	padding: 16px clamp(16px, calc((100% - 760px) / 2 + 16px), 50%);
+	padding: 16px 32px;
 	scroll-behavior: smooth;
 	position: relative;
 	z-index: 1;
+	max-width: 800px;
+	width: 100%;
+	margin: 0 auto;
+	box-sizing: border-box;
 }
 
-/* Scrollbar styling */
-.sas-hc-messages::-webkit-scrollbar { width: 5px; }
-.sas-hc-messages::-webkit-scrollbar-track { background: transparent; }
-.sas-hc-messages::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 4px; }
+.sas-hc-messages::-webkit-scrollbar        { width: 4px; }
+.sas-hc-messages::-webkit-scrollbar-thumb  { background: rgba(255,255,255,0.1); border-radius: 4px; }
+.sas-hc-messages::-webkit-scrollbar-track  { background: transparent; }
 
-/* ── Individual message rows ── */
+/* ── Message rows ── */
 .sas-hc-msg {
 	display: flex;
 	margin-bottom: 14px;
@@ -123,7 +400,7 @@
 }
 
 @keyframes sas-hc-fadein {
-	from { opacity: 0; transform: translateY(6px); }
+	from { opacity: 0; transform: translateY(5px); }
 	to   { opacity: 1; transform: translateY(0); }
 }
 
@@ -135,7 +412,7 @@
 	padding: 11px 15px;
 	border-radius: 18px;
 	font-size: 0.93rem;
-	line-height: 1.6;
+	line-height: 1.65;
 }
 
 .sas-hc-msg-user .sas-hc-msg-bubble {
@@ -152,18 +429,11 @@
 	border-bottom-left-radius: 4px;
 }
 
-/* Links inside assistant messages */
-.sas-hc-msg-assistant .sas-hc-msg-bubble a {
-	color: #d4a017;
-	text-decoration: underline;
-}
-.sas-hc-msg-assistant .sas-hc-msg-bubble a:hover { color: #e6b520; }
-
-/* Small text */
-.sas-hc-msg-assistant .sas-hc-msg-bubble small {
-	font-size: 0.82rem;
-	opacity: 0.7;
-}
+.sas-hc-msg-assistant .sas-hc-msg-bubble a         { color: #d4a017; text-decoration: underline; }
+.sas-hc-msg-assistant .sas-hc-msg-bubble a:hover   { color: #e6b520; }
+.sas-hc-msg-assistant .sas-hc-msg-bubble small      { font-size: 0.8rem; opacity: 0.7; }
+.sas-hc-msg-assistant .sas-hc-msg-bubble strong     { color: #fff; }
+.sas-hc-msg-assistant .sas-hc-msg-bubble em         { font-style: italic; opacity: 0.85; }
 
 /* ── Typing indicator ── */
 .sas-hc-typing {
@@ -176,7 +446,7 @@
 	width: 7px;
 	height: 7px;
 	border-radius: 50%;
-	background: rgba(255,255,255,0.45);
+	background: rgba(255,255,255,0.4);
 	display: inline-block;
 	animation: sas-hc-bounce 1.3s infinite ease-in-out;
 }
@@ -184,43 +454,42 @@
 .sas-hc-typing span:nth-child(3) { animation-delay: 0.36s; }
 
 @keyframes sas-hc-bounce {
-	0%, 60%, 100% { transform: translateY(0); opacity: 0.45; }
+	0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
 	30%           { transform: translateY(-7px); opacity: 1; }
 }
 
 /* ════════════════════════════════════════════════════════
-   SUGGESTION CHIPS
+   SUGGESTION CHIPS (mobile / no-sidebar fallback)
+   Hidden on desktop where sidebar provides navigation.
 ════════════════════════════════════════════════════════ */
 
 .sas-hc-chips {
-	display: flex;
+	display: none; /* hidden on desktop; shown on mobile via media query */
 	flex-wrap: wrap;
-	gap: 10px;
+	gap: 8px;
 	justify-content: center;
-	padding: 4px clamp(16px, 10%, 120px) 24px;
+	padding: 4px 16px 20px;
 	position: relative;
 	z-index: 1;
-	transition: opacity 0.2s ease;
 }
 
-.sas-hc-chips.sas-hc-hidden { display: none; }
+.sas-hc-chips.sas-hc-hidden { display: none !important; }
 
 .sas-hc-chip {
 	background: rgba(255,255,255,0.06);
-	border: 1px solid rgba(255,255,255,0.14);
-	color: rgba(255,255,255,0.78);
-	padding: 8px 16px;
+	border: 1px solid rgba(255,255,255,0.13);
+	color: rgba(255,255,255,0.75);
+	padding: 7px 14px;
 	border-radius: 20px;
-	font-size: 0.84rem;
+	font-size: 0.82rem;
 	cursor: pointer;
-	transition: background 0.2s, border-color 0.2s, color 0.2s;
+	transition: background 0.2s, border-color 0.2s;
 	font-family: inherit;
 	white-space: nowrap;
 }
-
 .sas-hc-chip:hover {
-	background: rgba(212,160,23,0.14);
-	border-color: rgba(212,160,23,0.45);
+	background: rgba(212,160,23,0.13);
+	border-color: rgba(212,160,23,0.4);
 	color: #fff;
 }
 
@@ -230,11 +499,15 @@
 
 .sas-hc-input-area {
 	flex-shrink: 0;
-	padding: 12px clamp(16px, calc((100% - 760px) / 2 + 16px), 50%) 20px;
-	background: rgba(0,0,0,0.25);
+	padding: 12px 32px 20px;
+	background: rgba(0,0,0,0.2);
 	border-top: 1px solid rgba(255,255,255,0.06);
 	position: relative;
 	z-index: 1;
+	max-width: 800px;
+	width: 100%;
+	margin: 0 auto;
+	box-sizing: border-box;
 }
 
 .sas-hc-input-row {
@@ -247,10 +520,7 @@
 	padding: 10px 12px;
 	transition: border-color 0.2s;
 }
-
-.sas-hc-input-row:focus-within {
-	border-color: rgba(212,160,23,0.4);
-}
+.sas-hc-input-row:focus-within { border-color: rgba(212,160,23,0.4); }
 
 .sas-hc-input {
 	flex: 1;
@@ -266,8 +536,7 @@
 	font-family: inherit;
 	overflow-y: auto;
 }
-
-.sas-hc-input::placeholder { color: rgba(255,255,255,0.32); }
+.sas-hc-input::placeholder { color: rgba(255,255,255,0.3); }
 
 .sas-hc-send {
 	width: 36px;
@@ -285,69 +554,22 @@
 	justify-content: center;
 	transition: background 0.2s, transform 0.1s;
 }
-
 .sas-hc-send:hover  { background: #e6b520; }
 .sas-hc-send:active { transform: scale(0.93); }
-.sas-hc-send:disabled { background: rgba(212,160,23,0.25); cursor: not-allowed; }
-
-/* ── Guest bar (shown below input for logged-out users) ── */
-
-.sas-hc-guest-bar {
-	display: flex;
-	align-items: center;
-	gap: 12px;
-	flex-wrap: wrap;
-	padding: 10px 4px 0;
-}
-
-.sas-hc-guest-hint {
-	flex: 1;
-	font-size: 0.78rem;
-	color: rgba(255,255,255,0.38);
-	min-width: 180px;
-}
-
-.sas-hc-guest-actions {
-	display: flex;
-	gap: 10px;
-	align-items: center;
-}
-
-.sas-hc-btn-signup {
-	background: #d4a017;
-	color: #000;
-	padding: 7px 16px;
-	border-radius: 6px;
-	text-decoration: none;
-	font-weight: 600;
-	font-size: 0.82rem;
-	white-space: nowrap;
-	transition: background 0.2s;
-}
-.sas-hc-btn-signup:hover { background: #e6b520; }
-
-.sas-hc-btn-signin {
-	color: rgba(255,255,255,0.52);
-	font-size: 0.82rem;
-	text-decoration: underline;
-	white-space: nowrap;
-	transition: color 0.2s;
-}
-.sas-hc-btn-signin:hover { color: #fff; }
+.sas-hc-send:disabled { background: rgba(212,160,23,0.22); cursor: not-allowed; }
 
 .sas-hc-disclaimer {
 	text-align: center;
-	font-size: 0.7rem;
-	color: rgba(255,255,255,0.2);
+	font-size: 0.68rem;
+	color: rgba(255,255,255,0.18);
 	margin: 8px 0 0;
 }
 
 /* ════════════════════════════════════════════════════════
-   ASSISTANT RICH CONTENT
+   ASSISTANT RICH CONTENT CARDS
    Panchang grid, Muhurat rows, Zodiac picker, Signup CTA
 ════════════════════════════════════════════════════════ */
 
-/* Panchang field rows */
 .sas-hc-panchang-grid {
 	display: flex;
 	flex-direction: column;
@@ -365,11 +587,9 @@
 	border-radius: 9px;
 	font-size: 0.87rem;
 }
-
-.sas-hc-prow span { color: rgba(255,255,255,0.65); }
+.sas-hc-prow span   { color: rgba(255,255,255,0.6); }
 .sas-hc-prow strong { color: #fff; text-align: right; }
 
-/* Muhurat rows */
 .sas-hc-mrow {
 	display: flex;
 	justify-content: space-between;
@@ -381,23 +601,15 @@
 	margin-bottom: 6px;
 	font-size: 0.87rem;
 }
-.sas-hc-mrow--good {
-	background: rgba(46,160,67,0.1);
-	border-left-color: #2ea043;
-}
-.sas-hc-mrow small {
-	font-size: 0.78rem;
-	opacity: 0.65;
-}
+.sas-hc-mrow--good { background: rgba(46,160,67,0.1); border-left-color: #2ea043; }
+.sas-hc-mrow small { font-size: 0.78rem; opacity: 0.65; }
 
-/* Zodiac picker grid */
 .sas-hc-zodiac-grid {
 	display: grid;
 	grid-template-columns: repeat(4, 1fr);
 	gap: 8px;
 	margin-top: 12px;
 }
-
 .sas-hc-zodiac-btn {
 	background: rgba(255,255,255,0.06);
 	border: 1px solid rgba(255,255,255,0.12);
@@ -407,16 +619,15 @@
 	font-size: 0.78rem;
 	cursor: pointer;
 	text-align: center;
-	transition: background 0.2s, border-color 0.2s, color 0.2s;
 	font-family: inherit;
+	transition: background 0.18s, border-color 0.18s;
 }
 .sas-hc-zodiac-btn:hover {
-	background: rgba(212,160,23,0.14);
+	background: rgba(212,160,23,0.13);
 	border-color: rgba(212,160,23,0.4);
 	color: #fff;
 }
 
-/* Signup CTA block inside assistant messages */
 .sas-hc-signup-cta {
 	display: flex;
 	gap: 12px;
@@ -424,7 +635,6 @@
 	flex-wrap: wrap;
 	margin-top: 14px;
 }
-
 .sas-hc-cta-primary {
 	display: inline-block;
 	background: #d4a017;
@@ -440,10 +650,9 @@
 .sas-hc-cta-primary:hover { background: #e6b520; color: #000; }
 
 .sas-hc-cta-secondary {
-	color: rgba(255,255,255,0.55);
+	color: rgba(255,255,255,0.52);
 	font-size: 0.87rem;
 	text-decoration: underline;
-	white-space: nowrap;
 	transition: color 0.2s;
 }
 .sas-hc-cta-secondary:hover { color: #fff; }
@@ -453,19 +662,42 @@
 ════════════════════════════════════════════════════════ */
 
 @media (max-width: 768px) {
-	.sas-hc-welcome        { padding: 32px 16px 16px; }
-	.sas-hc-msg-bubble     { max-width: 88%; }
-	.sas-hc-zodiac-grid    { grid-template-columns: repeat(3, 1fr); }
-	.sas-hc-chips          { padding: 0 12px 16px; }
-	.sas-hc-input-area     { padding: 10px 12px 16px; }
+	/* Show hamburger */
+	.sas-hc-hamburger { display: flex; }
+
+	/* Sidebar: detach from flow, slide in from left */
+	.sas-hc-sidebar {
+		position: fixed;
+		top: 0;
+		left: 0;
+		height: 100%;
+		width: 280px;
+		z-index: 20;
+		transform: translateX(-100%);
+		transition: transform 0.3s ease;
+		background: #0c0c1e;
+	}
+
+	.sas-hc-sidebar.sas-hc-sidebar--open {
+		transform: translateX(0);
+	}
+
+	/* Main area: full width on mobile, top padding for hamburger */
+	.sas-hc-main { padding-top: 50px; }
+
+	/* Show chips on mobile (sidebar is hidden by default) */
+	.sas-hc-chips { display: flex; }
+
+	.sas-hc-messages      { padding: 12px 16px; }
+	.sas-hc-input-area    { padding: 10px 14px 16px; }
+	.sas-hc-msg-bubble    { max-width: 88%; }
+	.sas-hc-zodiac-grid   { grid-template-columns: repeat(3, 1fr); }
 }
 
 @media (max-width: 480px) {
-	.sas-hc-name           { font-size: 1.4rem; }
-	.sas-hc-msg-bubble     { max-width: 94%; font-size: 0.9rem; }
-	.sas-hc-zodiac-grid    { grid-template-columns: repeat(2, 1fr); }
-	.sas-hc-guest-bar      { flex-direction: column; align-items: flex-start; }
-	.sas-hc-guest-actions  { flex-direction: row; }
-	.sas-hc-chip           { font-size: 0.8rem; padding: 7px 13px; }
-	.sas-hc-signup-cta     { flex-direction: column; align-items: flex-start; }
+	.sas-hc-welcome          { padding: 28px 14px 14px; }
+	.sas-hc-name             { font-size: 1.35rem; }
+	.sas-hc-msg-bubble       { max-width: 94%; font-size: 0.89rem; }
+	.sas-hc-zodiac-grid      { grid-template-columns: repeat(2, 1fr); }
+	.sas-hc-signup-cta       { flex-direction: column; align-items: flex-start; }
 }

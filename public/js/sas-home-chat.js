@@ -1,49 +1,118 @@
 /**
- * Sanathan Home Chat — Full-page Guruji AI interface
- * Powers the [sas_home_chat] shortcode on the homepage.
+ * Sanathan Home Chat — Sidebar + Chat interface
+ * Powers [sas_home_chat] shortcode on the homepage.
  *
- * Guests:      Smart keyword detection → fetch real data from public REST endpoints
- *              (Panchang, predictions, muhurat) + guided signup funnel.
- * Logged-in:   Full Guruji AI chat via /guruji/chat with session history.
- * @version 1.0.0
+ * Sidebar:   Navigation links + quick-topic buttons.
+ *            Mobile hamburger → slide-in panel.
+ * Chat:      Guruji AI for logged-in users (full context including Kundali).
+ *            Smart keyword routing for guests → real public API data + signup CTA.
+ * @version 1.1.0
  */
 (function () {
 	'use strict';
 
 	/* ── State ─────────────────────────────────────────────────────────────── */
-	var sessionToken  = null;   // persisted in sessionStorage
-	var isLoading     = false;  // prevent double-send
-	var historyLoaded = false;  // load history only once per mount
+	var sessionToken  = null;
+	var isLoading     = false;
+	var historyLoaded = false;
+	var sidebarOpen   = false;
 
 	/* ── Elements ───────────────────────────────────────────────────────────── */
+	var elSidebar, elHamburger, elOverlay;
 	var elWelcome, elMessages, elChips, elInput, elSend;
 
-	/* ── Helpers ────────────────────────────────────────────────────────────── */
+	/* ════════════════════════════════════════════════════════════════════════
+	   SIDEBAR BEHAVIOUR
+	════════════════════════════════════════════════════════════════════════ */
 
-	/** HTML-escape a string for safe interpolation into innerHTML template strings. */
+	function openSidebar() {
+		sidebarOpen = true;
+		elSidebar.classList.add('sas-hc-sidebar--open');
+		elOverlay.classList.add('sas-hc-overlay--visible');
+		elHamburger.classList.add('sas-hc-hamburger--open');
+		elHamburger.setAttribute('aria-expanded', 'true');
+	}
+
+	function closeSidebar() {
+		sidebarOpen = false;
+		elSidebar.classList.remove('sas-hc-sidebar--open');
+		elOverlay.classList.remove('sas-hc-overlay--visible');
+		elHamburger.classList.remove('sas-hc-hamburger--open');
+		elHamburger.setAttribute('aria-expanded', 'false');
+	}
+
+	function toggleSidebar() {
+		if (sidebarOpen) { closeSidebar(); } else { openSidebar(); }
+	}
+
+	/** Remove active highlight from all sidebar items. */
+	function clearActiveSidebarItems() {
+		var items = elSidebar.querySelectorAll('.sas-hc-sidebar-item--active');
+		items.forEach(function (el) { el.classList.remove('sas-hc-sidebar-item--active'); });
+	}
+
+	/** Handle clicks on sidebar items (event-delegated). */
+	function handleSidebarClick(e) {
+		var item = e.target.closest('.sas-hc-sidebar-item');
+		if (!item) return;
+
+		// ── External page link (navigates away) ──────────────────────────────
+		if (item.tagName === 'A' || item.classList.contains('sas-hc-sb-link')) {
+			closeSidebar();
+			return; // let the browser navigate
+		}
+
+		// ── Locked feature (guest) ────────────────────────────────────────────
+		if (item.classList.contains('sas-hc-locked')) {
+			e.preventDefault();
+			var feature = item.getAttribute('data-locked-feature') || 'this feature';
+			closeSidebar();
+			collapseWelcome();
+			appendHtml(
+				'🔒 <strong>' + escHtml(feature) + '</strong> requires a free account.<br><br>' +
+				'Sign up in seconds to access personalized Kundali readings, yearly forecasts, and full Guruji chat history:' +
+				ctaHtml()
+			);
+			return;
+		}
+
+		// ── Chat prompt button (data-prompt) ──────────────────────────────────
+		var prompt = item.getAttribute('data-prompt');
+		if (!prompt) return;
+
+		clearActiveSidebarItems();
+		item.classList.add('sas-hc-sidebar-item--active');
+
+		// On mobile, close sidebar before starting the conversation
+		if (window.innerWidth <= 768) closeSidebar();
+
+		elInput.value = prompt;
+		autoResize();
+		sendMessage();
+	}
+
+	/* ════════════════════════════════════════════════════════════════════════
+	   HELPERS
+	════════════════════════════════════════════════════════════════════════ */
+
 	function escHtml(str) {
 		var d = document.createElement('div');
 		d.appendChild(document.createTextNode(String(str)));
 		return d.innerHTML;
 	}
 
-	/** Capitalise first letter. */
 	function ucFirst(str) {
 		return str.charAt(0).toUpperCase() + str.slice(1);
 	}
 
 	/* ─────────────────────────────────────────────
-	   Login-state helper — same cookie-fallback
-	   pattern as sas-guruji-float.js.
+	   Login-state helper — cookie fallback for
+	   full-page-cache scenarios (same as float JS).
 	───────────────────────────────────────────── */
 	function getIsLoggedIn() {
 		if (typeof sasConfig === 'undefined') return false;
 		if (sasConfig.isLoggedIn) return true;
-
-		// Cookie fallback for full-page cache scenarios
 		if (document.cookie.indexOf('wordpress_logged_in_') === -1) return false;
-
-		// Stale guest-cached page — reload once to get authenticated version
 		try {
 			var KEY = 'sas_auth_reload';
 			if (!sessionStorage.getItem(KEY)) {
@@ -51,21 +120,19 @@
 				window.location.reload();
 				return false;
 			}
-		} catch (e) { /* sessionStorage unavailable */ }
-
+		} catch (e) {}
 		return true;
 	}
 
-	/* ── API helpers ─────────────────────────────────────────────────────────── */
+	/* ════════════════════════════════════════════════════════════════════════
+	   API
+	════════════════════════════════════════════════════════════════════════ */
 
 	async function apiPost(endpoint, body) {
 		try {
 			var r = await fetch(sasConfig.restBase + endpoint, {
 				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json',
-					'X-WP-Nonce': sasConfig.nonce,
-				},
+				headers: { 'Content-Type': 'application/json', 'X-WP-Nonce': sasConfig.nonce },
 				body: JSON.stringify(body),
 			});
 			return r.ok ? r.json() : null;
@@ -81,7 +148,6 @@
 		} catch (e) { return null; }
 	}
 
-	/** Public (no-auth) GET — for panchang, predictions, muhurat. */
 	async function publicGet(endpoint) {
 		try {
 			var r = await fetch(sasConfig.restBase + endpoint);
@@ -89,9 +155,10 @@
 		} catch (e) { return null; }
 	}
 
-	/* ── UI transitions ──────────────────────────────────────────────────────── */
+	/* ════════════════════════════════════════════════════════════════════════
+	   UI — MESSAGE RENDERING
+	════════════════════════════════════════════════════════════════════════ */
 
-	/** Collapse the welcome header and hide suggestion chips. */
 	function collapseWelcome() {
 		if (elWelcome && !elWelcome.classList.contains('sas-hc-collapsed')) {
 			elWelcome.classList.add('sas-hc-collapsed');
@@ -109,11 +176,9 @@
 		if (el && el.parentNode) el.parentNode.removeChild(el);
 	}
 
-	/* ── Message rendering ───────────────────────────────────────────────────── */
-
 	/**
-	 * Append a text-only message bubble (XSS-safe via textContent).
-	 * Used for user input and Guruji AI text replies.
+	 * Append XSS-safe text message (for user input + AI text replies).
+	 * Newlines rendered as <br> using DOM API — never innerHTML.
 	 */
 	function appendText(role, text) {
 		collapseWelcome();
@@ -121,13 +186,10 @@
 		var bubble = document.createElement('div');
 		wrap.className   = 'sas-hc-msg sas-hc-msg-' + role;
 		bubble.className = 'sas-hc-msg-bubble';
-
-		// Newline → <br> without innerHTML
 		String(text).split('\n').forEach(function (line, i) {
 			if (i > 0) bubble.appendChild(document.createElement('br'));
 			bubble.appendChild(document.createTextNode(line));
 		});
-
 		wrap.appendChild(bubble);
 		elMessages.appendChild(wrap);
 		scrollBottom();
@@ -135,9 +197,9 @@
 	}
 
 	/**
-	 * Append an HTML-formatted assistant message.
-	 * ONLY called with server-controlled template strings or escHtml()-sanitised data.
-	 * NEVER called with raw user input or unescaped API strings.
+	 * Append HTML-formatted assistant message.
+	 * ONLY called with server-controlled templates + escHtml()-sanitised API values.
+	 * NEVER called with raw user input.
 	 */
 	function appendHtml(html) {
 		collapseWelcome();
@@ -145,14 +207,13 @@
 		var bubble = document.createElement('div');
 		wrap.className   = 'sas-hc-msg sas-hc-msg-assistant';
 		bubble.className = 'sas-hc-msg-bubble';
-		bubble.innerHTML = html; // safe: only our own templates + escHtml() values
+		bubble.innerHTML = html;
 		wrap.appendChild(bubble);
 		elMessages.appendChild(wrap);
 		scrollBottom();
 		return wrap;
 	}
 
-	/** Append an animated typing indicator. Returns the element so caller can remove it. */
 	function appendTyping() {
 		var wrap   = document.createElement('div');
 		var bubble = document.createElement('div');
@@ -166,7 +227,9 @@
 		return wrap;
 	}
 
-	/* ── Guest CTA builder ───────────────────────────────────────────────────── */
+	/* ════════════════════════════════════════════════════════════════════════
+	   GUEST CTA
+	════════════════════════════════════════════════════════════════════════ */
 
 	function ctaHtml() {
 		return '<div class="sas-hc-signup-cta">' +
@@ -175,13 +238,11 @@
 			'</div>';
 	}
 
-	/* ── Data extraction helpers ─────────────────────────────────────────────── */
+	/* ════════════════════════════════════════════════════════════════════════
+	   DATA EXTRACTION
+	════════════════════════════════════════════════════════════════════════ */
 
-	/**
-	 * Extract prediction text from the /predictions REST response.
-	 * Response shape: { status:'ok', source:'cache', data: <raw_vedic_api_json> }
-	 * VedicAstroAPI shapes: { bot_response }, { response:[{bot_response}] }, { response:{bot_response} }
-	 */
+	/** Extract prediction text from /predictions REST response. */
 	function extractPrediction(result) {
 		if (!result || result.status !== 'ok') return null;
 		var d = result.data;
@@ -200,10 +261,7 @@
 		return null;
 	}
 
-	/**
-	 * Extract a named field from the Panchang API response.
-	 * Handles: direct string, { name }, { details: { <key>_name } }.
-	 */
+	/** Extract a named field from Panchang API response (defensive, multi-key). */
 	function panchangField(data, key) {
 		if (!data) return null;
 		var v = data[key];
@@ -217,7 +275,10 @@
 		return null;
 	}
 
-	/* ── Guest response handlers ─────────────────────────────────────────────── */
+	/* ════════════════════════════════════════════════════════════════════════
+	   GUEST RESPONSE HANDLERS
+	   Show real public-API data but cap the content and nudge to signup.
+	════════════════════════════════════════════════════════════════════════ */
 
 	async function guestPanchang() {
 		var typing = appendTyping();
@@ -225,7 +286,7 @@
 		removeEl(typing);
 
 		if (!data || data.error) {
-			appendHtml('🗓️ <strong>Today\'s Panchang</strong><br><br>Unable to fetch Panchang right now — please try again in a moment.' + ctaHtml());
+			appendHtml('🗓️ <strong>Today\'s Panchang</strong><br><br>Unable to fetch Panchang right now. Please try again shortly.' + ctaHtml());
 			return;
 		}
 
@@ -236,33 +297,27 @@
 			{ key: 'karana',    label: '⚡ Karana' },
 			{ key: 'vara',      label: '📆 Vara (Day)' },
 		];
-
 		var rows = '';
 		fields.forEach(function (f) {
 			var val = panchangField(data, f.key);
-			if (val) {
-				rows += '<div class="sas-hc-prow"><span>' + f.label + '</span><strong>' + escHtml(val) + '</strong></div>';
-			}
+			if (val) rows += '<div class="sas-hc-prow"><span>' + f.label + '</span><strong>' + escHtml(val) + '</strong></div>';
 		});
 
-		// Festivals from multiple possible keys
-		var fRaw = data.festival || data.festivals || (data.response && data.response.festival) || null;
-		var festNames = [];
+		var fRaw  = data.festival || data.festivals || (data.response && data.response.festival) || null;
+		var fests = [];
 		if (Array.isArray(fRaw)) {
 			fRaw.slice(0, 3).forEach(function (f) {
 				var n = typeof f === 'string' ? f : (f.name || f.festival_name || '');
-				if (n) festNames.push(n);
+				if (n) fests.push(n);
 			});
 		} else if (typeof fRaw === 'string' && fRaw) {
-			festNames.push(fRaw);
+			fests.push(fRaw);
 		}
 
 		var html = '🗓️ <strong>Today\'s Panchang</strong><br><br>';
 		if (rows) html += '<div class="sas-hc-panchang-grid">' + rows + '</div>';
-		if (festNames.length) {
-			html += '<br>🪔 <strong>Festivals Today:</strong> ' + festNames.map(escHtml).join(' · ');
-		}
-		html += '<br><br><small>Sign up for the full Panchang with Rahu Kaal, Sunrise/Sunset &amp; Muhurat alerts:</small>' + ctaHtml();
+		if (fests.length) html += '<br>🪔 <strong>Festivals:</strong> ' + fests.map(escHtml).join(' · ');
+		html += '<br><br><small>Sign up to unlock Rahu Kaal, Sunrise/Sunset, personalised Muhurat alerts &amp; more:</small>' + ctaHtml();
 		appendHtml(html);
 	}
 
@@ -273,15 +328,15 @@
 
 		var text = extractPrediction(result);
 		if (!text) {
-			appendHtml('🌟 Unable to fetch the ' + escHtml(ucFirst(zodiac)) + ' horoscope right now. Please try again shortly.' + ctaHtml());
+			appendHtml('🌟 Unable to fetch the ' + escHtml(ucFirst(zodiac)) + ' horoscope right now.' + ctaHtml());
 			return;
 		}
 
-		var snippet = escHtml(text.substring(0, 300)) + (text.length > 300 ? '…' : '');
+		var snippet = escHtml(text.substring(0, 320)) + (text.length > 320 ? '…' : '');
 		appendHtml(
 			'🌟 <strong>' + escHtml(ucFirst(zodiac)) + ' — Today\'s Horoscope</strong><br><br>' +
 			snippet + '<br><br>' +
-			'<small>Sign up for the full reading, weekly forecast &amp; personalized Kundali:</small>' + ctaHtml()
+			'<small>Sign up to get the full reading, weekly forecast &amp; your personalized Kundali:</small>' + ctaHtml()
 		);
 	}
 
@@ -332,25 +387,21 @@
 			return;
 		}
 
-		// Choghadiya slots — multiple possible response shapes
 		var arr = data.day || data.day_choghadiya || data.choghadiya ||
 		          (data.response && (data.response.day || data.response)) || [];
-		var slots = [];
+		var rows = '';
 		if (Array.isArray(arr)) {
 			arr.slice(0, 5).forEach(function (s) {
 				var name = s.muhurta_name || s.name || s.type || '';
 				var time = s.time || s.muhurta_time || (s.start && s.end ? s.start + '–' + s.end : '') || '';
 				var good = /amrit|shubh|labh|char/i.test(name);
-				if (name) slots.push({ name: name, time: time, good: good });
+				if (name) {
+					rows += '<div class="sas-hc-mrow' + (good ? ' sas-hc-mrow--good' : '') + '">' +
+						'<span>' + (good ? '✅' : '⚠️') + ' ' + escHtml(name) + '</span>' +
+						(time ? '<small>' + escHtml(time) + '</small>' : '') + '</div>';
+				}
 			});
 		}
-
-		var rows = '';
-		slots.forEach(function (s) {
-			rows += '<div class="sas-hc-mrow' + (s.good ? ' sas-hc-mrow--good' : '') + '">' +
-				'<span>' + (s.good ? '✅' : '⚠️') + ' ' + escHtml(s.name) + '</span>' +
-				(s.time ? '<small>' + escHtml(s.time) + '</small>' : '') + '</div>';
-		});
 
 		appendHtml(
 			'⏰ <strong>Today\'s Choghadiya (Auspicious Times)</strong><br><br>' +
@@ -359,7 +410,7 @@
 		);
 	}
 
-	/** Route a guest message to the appropriate handler based on keyword detection. */
+	/** Route a guest message intelligently based on keywords. */
 	async function handleGuestMessage(text) {
 		var l = text.toLowerCase();
 
@@ -367,36 +418,29 @@
 			await guestPanchang();
 
 		} else if (/horoscope|rashifal|rashi|zodiac|aries|taurus|gemini|cancer|leo|virgo|libra|scorpio|sagittarius|capricorn|aquarius|pisces/.test(l)) {
-			// Auto-detect zodiac sign from message
-			var signs = ['aries','taurus','gemini','cancer','leo','virgo','libra','scorpio','sagittarius','capricorn','aquarius','pisces'];
+			var signs    = ['aries','taurus','gemini','cancer','leo','virgo','libra','scorpio','sagittarius','capricorn','aquarius','pisces'];
 			var detected = null;
 			for (var i = 0; i < signs.length; i++) {
 				if (l.indexOf(signs[i]) !== -1) { detected = signs[i]; break; }
 			}
-			// Fall back to user's Kundali zodiac (injected by PHP if logged-in-ish)
 			if (!detected && sasConfig.userZodiac) detected = sasConfig.userZodiac;
-			if (detected) {
-				await guestHoroscope(detected);
-			} else {
-				showZodiacPicker();
-			}
+			if (detected) { await guestHoroscope(detected); } else { showZodiacPicker(); }
 
 		} else if (/muhurat|auspicious|shubh|choghadiya|timing|good time/.test(l)) {
 			await guestMuhurat();
 
 		} else if (/festival|utsav|puja|pooja|tyohar|celebrat/.test(l)) {
-			// Panchang includes festival data
-			await guestPanchang();
+			await guestPanchang(); // festivals come from panchang data
 
 		} else if (/kundali|birth chart|janam|natal|jyotish/.test(l)) {
 			appendHtml(
-				'📿 <strong>Vedic Kundali (Birth Chart)</strong><br><br>' +
-				'Your Kundali is the cosmic blueprint of your soul — the precise map of the sky at your exact birth moment. It reveals:<br><br>' +
-				'• ☀️ <strong>Sun Sign</strong> (Surya Rashi)<br>' +
-				'• 🌙 <strong>Moon Sign</strong> (Chandra Rashi)<br>' +
-				'• ⬆️ <strong>Ascendant / Lagna</strong><br>' +
-				'• 🪐 <strong>All 9 Planets</strong> and their house placements<br>' +
-				'• 🏠 <strong>12 Houses</strong> governing every area of life<br><br>' +
+				'📿 <strong>Vedic Kundali — Your Cosmic Blueprint</strong><br><br>' +
+				'Your Kundali is the precise map of the sky at your exact birth moment. It reveals:<br><br>' +
+				'• ☀️ Sun Sign (Surya Rashi)<br>' +
+				'• 🌙 Moon Sign (Chandra Rashi)<br>' +
+				'• ⬆️ Ascendant / Lagna<br>' +
+				'• 🪐 All 9 Planets &amp; their house placements<br>' +
+				'• 🏠 12 Houses governing every area of life<br><br>' +
 				'Create your free account to generate your complete Kundali:' + ctaHtml()
 			);
 
@@ -404,28 +448,30 @@
 			appendHtml(
 				'🙏 <strong>Jai Shri Ram! Welcome to Sanathan Guruji.</strong><br><br>' +
 				'I\'m your personal Vedic AI guide. Here\'s what I can do for you:<br><br>' +
-				'🗓️ <strong>Daily Panchang</strong> — Tithi, Nakshatra, Yoga, Karana<br>' +
-				'🌟 <strong>Zodiac Readings</strong> — Daily, weekly &amp; yearly in 9 languages<br>' +
+				'🗓️ <strong>Panchang</strong> — Daily Tithi, Nakshatra, Yoga &amp; Karana<br>' +
+				'🌟 <strong>Horoscope</strong> — Daily, weekly &amp; yearly in 9 languages<br>' +
 				'📿 <strong>Kundali</strong> — Full birth chart with planetary insights<br>' +
-				'🪔 <strong>Hindu Festivals</strong> — Upcoming celebrations, vrats &amp; timings<br>' +
+				'🪔 <strong>Festivals</strong> — Hindu celebrations, vrats &amp; timings<br>' +
 				'⏰ <strong>Muhurat</strong> — Auspicious times for important activities<br>' +
 				'💬 <strong>Personal Guidance</strong> — Dharma, spirituality &amp; life questions<br><br>' +
 				'Sign up free to unlock your fully personalised experience:' + ctaHtml()
 			);
 
 		} else {
-			// Generic response — show relevant teaser + signup prompt
+			// Generic: show a teaser then guide to register
 			var snippet = text.length > 70 ? text.substring(0, 70) + '…' : text;
 			appendHtml(
 				'🙏 <strong>Jai Shri Ram!</strong><br><br>' +
 				'I\'d love to guide you on <em>"' + escHtml(snippet) + '"</em>.<br><br>' +
-				'For personalized Vedic guidance tailored to your birth chart, zodiac sign, and spiritual journey — ' +
-				'create your free account:' + ctaHtml()
+				'For personalized Vedic guidance tailored to your birth chart, zodiac sign, and spiritual journey, ' +
+				'please create your free account:' + ctaHtml()
 			);
 		}
 	}
 
-	/* ── Logged-in: history ──────────────────────────────────────────────────── */
+	/* ════════════════════════════════════════════════════════════════════════
+	   LOGGED-IN: LOAD HISTORY
+	════════════════════════════════════════════════════════════════════════ */
 
 	async function loadHistory() {
 		if (historyLoaded) return;
@@ -445,7 +491,9 @@
 		scrollBottom();
 	}
 
-	/* ── Send ────────────────────────────────────────────────────────────────── */
+	/* ════════════════════════════════════════════════════════════════════════
+	   SEND MESSAGE
+	════════════════════════════════════════════════════════════════════════ */
 
 	async function sendMessage() {
 		if (isLoading) return;
@@ -460,11 +508,11 @@
 		appendText('user', text);
 
 		if (!getIsLoggedIn()) {
-			// ── Guest: smart keyword routing
+			// ── Guest: keyword routing + public API data ──────────────────────
 			await handleGuestMessage(text);
 
 		} else {
-			// ── Logged-in: real Guruji AI
+			// ── Logged-in: full Guruji AI (backend knows Kundali context) ────
 			var typing = appendTyping();
 			var data   = await apiPost('/guruji/chat', { message: text, session_token: sessionToken });
 			removeEl(typing);
@@ -475,10 +523,9 @@
 					try { sessionStorage.setItem('sas_guruji_session', sessionToken); } catch (e) {}
 				}
 				if (data.setup_required) {
-					// Profile not set up yet — guide them to the profile setup
 					appendHtml(
 						'🙏 <strong>Let\'s set up your personal Guruji first!</strong><br><br>' +
-						'Choose your Guruji\'s name, personality, and preferred language for a truly personalized experience.<br><br>' +
+						'Choose your Guruji\'s name, personality, and language for a truly personalised experience.<br><br>' +
 						'<a href="' + sasConfig.gurujiUrl + '" class="sas-hc-cta-primary">Set Up My Guruji →</a>'
 					);
 				} else {
@@ -494,7 +541,9 @@
 		elInput.focus();
 	}
 
-	/* ── Chips ───────────────────────────────────────────────────────────────── */
+	/* ════════════════════════════════════════════════════════════════════════
+	   CHIPS (mobile quick-start)
+	════════════════════════════════════════════════════════════════════════ */
 
 	function handleChipClick(e) {
 		var btn = e.target.closest('[data-prompt]');
@@ -506,7 +555,9 @@
 		sendMessage();
 	}
 
-	/* ── Textarea auto-resize ────────────────────────────────────────────────── */
+	/* ════════════════════════════════════════════════════════════════════════
+	   TEXTAREA AUTO-RESIZE
+	════════════════════════════════════════════════════════════════════════ */
 
 	function autoResize() {
 		if (!elInput) return;
@@ -514,11 +565,19 @@
 		elInput.style.height = Math.min(elInput.scrollHeight, 120) + 'px';
 	}
 
-	/* ── Bootstrap ───────────────────────────────────────────────────────────── */
+	/* ════════════════════════════════════════════════════════════════════════
+	   BOOTSTRAP
+	════════════════════════════════════════════════════════════════════════ */
 
 	function init() {
 		if (typeof sasConfig === 'undefined') return;
 
+		// Sidebar elements
+		elSidebar   = document.getElementById('sas-hc-sidebar');
+		elHamburger = document.getElementById('sas-hc-hamburger');
+		elOverlay   = document.getElementById('sas-hc-overlay');
+
+		// Chat elements
 		elWelcome  = document.getElementById('sas-hc-welcome');
 		elMessages = document.getElementById('sas-hc-messages');
 		elChips    = document.getElementById('sas-hc-chips');
@@ -527,18 +586,23 @@
 
 		if (!elMessages || !elInput || !elSend) return;
 
-		// Restore session token from previous session
-		try {
-			var stored = sessionStorage.getItem('sas_guruji_session');
-			if (stored) sessionToken = stored;
-		} catch (e) { /* sessionStorage unavailable */ }
-
-		// Load history for logged-in users (non-blocking)
-		if (getIsLoggedIn()) {
-			loadHistory();
+		// ── Sidebar wiring ────────────────────────────────────────────────────
+		if (elSidebar) {
+			elSidebar.addEventListener('click', handleSidebarClick);
+		}
+		if (elHamburger) {
+			elHamburger.addEventListener('click', toggleSidebar);
+		}
+		if (elOverlay) {
+			elOverlay.addEventListener('click', closeSidebar);
 		}
 
-		// Wire up events
+		// Close sidebar on Escape
+		document.addEventListener('keydown', function (e) {
+			if (e.key === 'Escape' && sidebarOpen) closeSidebar();
+		});
+
+		// ── Chat wiring ───────────────────────────────────────────────────────
 		elSend.addEventListener('click', sendMessage);
 
 		elInput.addEventListener('keydown', function (e) {
@@ -554,7 +618,18 @@
 			elChips.addEventListener('click', handleChipClick);
 		}
 
-		// Focus input on load (desktop only — avoid zooming on mobile)
+		// ── Restore session token ─────────────────────────────────────────────
+		try {
+			var stored = sessionStorage.getItem('sas_guruji_session');
+			if (stored) sessionToken = stored;
+		} catch (e) { /* sessionStorage unavailable */ }
+
+		// ── Load history for logged-in users (non-blocking) ───────────────────
+		if (getIsLoggedIn()) {
+			loadHistory();
+		}
+
+		// Focus input on desktop (avoid zoom on mobile)
 		if (window.innerWidth > 768) {
 			elInput.focus();
 		}
